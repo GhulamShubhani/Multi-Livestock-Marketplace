@@ -18,7 +18,7 @@
     "build:admin": "npm run build --workspace=admin",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prepare": "husky || true"
+    "prepare": "node -e \"try{require('husky')}catch(e){process.exit(0)}\""
   },
   "engines": {
     "node": ">=20"

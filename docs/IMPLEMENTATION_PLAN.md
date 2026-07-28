@@ -4,30 +4,32 @@ Work proceeds **one module/phase at a time**. After each phase, wait for your co
 
 ---
 
-## Phase 0 — Architecture & scaffold (CURRENT)
+## Phase 0 — Architecture & scaffold
 
 - [x] Architecture documentation
 - [x] Folder structure created
-- [ ] Root `package.json`, `.gitignore`, `README.md`
-- [ ] Awaiting your approval of the design
+- [x] Root `package.json`, `.gitignore`, `README.md`
+- [x] Design approved
 
 ---
 
-## Phase 1 — Backend foundation
+## Phase 1 — Backend foundation (CURRENT)
 
 Create:
 
-- `backend` package init + TypeScript strict
-- Env config validation
-- MongoDB connection
-- Logger (Winston)
-- `ApiResponse`, `AppError`, `asyncHandler`
-- Global middlewares (Helmet, CORS, rate limit, sanitize, compression)
-- Error + 404 handlers
-- Health route `GET /api/v1/health`
-- `.env.example`
+- [x] `backend` package init + TypeScript strict
+- [x] Env config validation
+- [x] MongoDB connection
+- [x] Logger (Winston)
+- [x] `ApiResponse`, `AppError`, `asyncHandler`
+- [x] Global middlewares (Helmet, CORS, rate limit, sanitize, compression)
+- [x] Error + 404 handlers
+- [x] Health route `GET /api/v1/health`
+- [x] `.env.example`
 
-**Exit criteria:** Server boots, connects to Mongo, health returns 200, security headers present.
+**Exit criteria:** ✅ Server boots, connects to Mongo, health returns 200, security headers present.
+
+Awaiting confirmation to start **Phase 2 — Auth + RBAC**.
 
 ---
 
