@@ -11,7 +11,7 @@ Production-ready **Cat Marketplace** monorepo with three independent application
 
 ## Status
 
-**Phase 0 — Architecture & scaffold.** Design docs and folder structure are ready. Implementation starts after approval.
+**Phases 0–7 complete.** Backend API (auth, catalog, commerce, ops) and frontend foundation are in place. Next: **Phase 8 — Frontend features**.
 
 ## Documentation
 
@@ -29,18 +29,22 @@ Production-ready **Cat Marketplace** monorepo with three independent application
 ## Prerequisites
 
 - Node.js ≥ 20
-- MongoDB Atlas (or local MongoDB)
-- Cloudinary, Stripe, SMTP accounts (later phases)
+- MongoDB (local Docker `cat-mongo` or Atlas)
+- Optional: Cloudinary, Stripe, SMTP (mocks work without them)
 
 ## Getting started
 
-Implementation is phased. After Phase 0 approval:
-
 ```bash
-# Phase 1 will initialize backend dependencies and start the API
 npm install
+
+# API (port 5000)
 npm run dev:backend
+
+# Storefront (port 3000)
+npm run dev:frontend
 ```
+
+Default super admin (seeded): `superadmin@catmarketplace.local` / `SuperAdmin!23456`
 
 ## Architecture (summary)
 

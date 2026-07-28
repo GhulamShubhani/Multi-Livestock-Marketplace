@@ -51,15 +51,18 @@ Work proceeds **one module/phase at a time**. After each phase, wait for your co
 
 **Exit criteria:** ✅ Ops APIs live; dashboard cards/sales/inventory; RBAC on admin routes.
 
-Awaiting confirmation to start **Phase 7 — Frontend foundation**.
-
 ---
 
 ## Phase 7 — Frontend foundation
 
-- Next.js 15 scaffold + Tailwind + MUI + providers
-- Axios + React Query + Zustand theme/cart
-- Layout, dark mode, SEO defaults
+- [x] Next.js 15 scaffold + Tailwind v4 + MUI + App Router
+- [x] Axios API client + React Query + Zustand (cart/wishlist/ui)
+- [x] Theme (forest + amber), dark mode, layout shell, SEO defaults
+- [x] Landing hero + placeholder About / Contact / Cats routes
+
+**Exit criteria:** ✅ Storefront foundation builds; providers and brand shell ready for feature wiring.
+
+Awaiting confirmation to start **Phase 8 — Frontend features**.
 
 ---
 
