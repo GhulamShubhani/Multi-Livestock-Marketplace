@@ -50,6 +50,18 @@ Default super admin (change in `.env`):
 
 Mutating routes require `X-CSRF-Token`. Admin user routes require `users:*` permissions.
 
+## Catalog & Uploads (Phase 4)
+
+| Resource | Public | Admin |
+|----------|--------|-------|
+| Categories | `GET /categories`, `GET /categories/slug/:slug` | CRUD + `/categories/admin` |
+| Breeds | `GET /breeds`, `GET /breeds/slug/:slug` | CRUD + `/breeds/admin` |
+| Cats | `GET /cats` (filters), `GET /cats/slug/:slug` | CRUD + status + `/cats/admin` |
+| Uploads | — | `POST /uploads/image`, `POST /uploads/images`, `DELETE /uploads` |
+
+Cat filters: `q`, `breed`, `category`, `gender`, `featured`, `minPrice`, `maxPrice`, `sort`.  
+Prices are integer **cents**. Cloudinary is optional in development (mock URLs if unset).
+
 ## Local MongoDB (Docker)
 
 ```bash

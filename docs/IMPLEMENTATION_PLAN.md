@@ -25,22 +25,21 @@ Work proceeds **one module/phase at a time**. After each phase, wait for your co
 
 ---
 
-## Phase 3 — Users & profile (CURRENT)
+## Phase 3 — Users & profile
 
-- [x] Admin user management APIs
-- [x] Customer profile + addresses + password change
-- [x] Session list/revoke
+- [x] Complete (verified)
 
-**Exit criteria:** ✅ Admin can manage users; customers can manage profile/addresses/sessions; RBAC enforced.
-
-Awaiting confirmation to start **Phase 4 — Catalog & uploads**.
 ---
 
-## Phase 4 — Catalog & uploads
+## Phase 4 — Catalog & uploads (CURRENT)
 
-- Category, Breed, Cat modules
-- Cloudinary upload module
-- Public list/detail with filters + indexes
+- [x] Category, Breed, Cat modules
+- [x] Cloudinary upload module (mock fallback in dev)
+- [x] Public list/detail with filters + indexes
+
+**Exit criteria:** ✅ Catalog CRUD + public browse; secure image upload with MIME/size checks.
+
+Awaiting confirmation to start **Phase 5 — Commerce**.
 
 ---
 
