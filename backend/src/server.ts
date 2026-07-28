@@ -3,9 +3,14 @@ import { createApp } from './app';
 import { env } from './config/env';
 import { logger } from './config/logger';
 import { connectDatabase, disconnectDatabase } from './database/connection';
+import { runSeed } from './database/seed';
 
 async function bootstrap(): Promise<void> {
   await connectDatabase();
+
+  if (env.SEED_ON_BOOT) {
+    await runSeed();
+  }
 
   const app = createApp();
   const server = http.createServer(app);

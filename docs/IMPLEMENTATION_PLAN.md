@@ -13,45 +13,27 @@ Work proceeds **one module/phase at a time**. After each phase, wait for your co
 
 ---
 
-## Phase 1 — Backend foundation (CURRENT)
+## Phase 1 — Backend foundation
 
-Create:
-
-- [x] `backend` package init + TypeScript strict
-- [x] Env config validation
-- [x] MongoDB connection
-- [x] Logger (Winston)
-- [x] `ApiResponse`, `AppError`, `asyncHandler`
-- [x] Global middlewares (Helmet, CORS, rate limit, sanitize, compression)
-- [x] Error + 404 handlers
-- [x] Health route `GET /api/v1/health`
-- [x] `.env.example`
-
-**Exit criteria:** ✅ Server boots, connects to Mongo, health returns 200, security headers present.
-
-Awaiting confirmation to start **Phase 2 — Auth + RBAC**.
+- [x] Complete (verified)
 
 ---
 
 ## Phase 2 — Auth + RBAC
 
-- User / Role / Permission / RefreshToken models
-- Auth service (register, login, refresh, logout, verify, forgot/reset, OTP)
-- JWT + cookie helpers
-- `authenticate` + `authorize` middlewares
-- Seed roles/permissions + super admin
-- Auth activity logging
-
-**Exit criteria:** Full auth flow works via HTTP cookies; RBAC blocks unauthorized routes.
+- [x] Complete (verified)
 
 ---
 
-## Phase 3 — Users & profile
+## Phase 3 — Users & profile (CURRENT)
 
-- Admin user management APIs
-- Customer profile + addresses + password change
-- Session list/revoke
+- [x] Admin user management APIs
+- [x] Customer profile + addresses + password change
+- [x] Session list/revoke
 
+**Exit criteria:** ✅ Admin can manage users; customers can manage profile/addresses/sessions; RBAC enforced.
+
+Awaiting confirmation to start **Phase 4 — Catalog & uploads**.
 ---
 
 ## Phase 4 — Catalog & uploads
