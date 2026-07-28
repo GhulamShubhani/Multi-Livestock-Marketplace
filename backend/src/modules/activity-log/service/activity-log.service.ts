@@ -1,7 +1,7 @@
-import type { Types } from 'mongoose';
-import { logger } from '../../../config/logger';
 import { activityLogRepository } from '../repository/activity-log.repository';
 import type { ActivitySeverity } from '../interface/activity-log.interface';
+import type { Types } from 'mongoose';
+import { logger } from '../../../config/logger';
 
 export interface LogActivityInput {
   actor?: Types.ObjectId | string;
@@ -37,6 +37,10 @@ export class ActivityLogService {
         action: input.action,
       });
     }
+  }
+
+  async list(query: Record<string, unknown>) {
+    return activityLogRepository.list(query);
   }
 }
 

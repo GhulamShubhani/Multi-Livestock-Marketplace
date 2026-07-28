@@ -37,22 +37,21 @@ Work proceeds **one module/phase at a time**. After each phase, wait for your co
 
 ---
 
-## Phase 5 — Commerce (CURRENT)
+## Phase 5 — Commerce
 
-- [x] Wishlist, Coupons, Orders
-- [x] Stripe checkout / payment intent / webhook / refunds (mock mode in dev)
-- [x] Reviews
-
-**Exit criteria:** ✅ Full commerce flow: wishlist → coupon → order → payment → review.
-
-Awaiting confirmation to start **Phase 6 — Ops modules**.
+- [x] Complete (verified)
 
 ---
 
-## Phase 6 — Ops modules
+## Phase 6 — Ops modules (CURRENT)
 
-- Notifications, CMS, Banners, Settings
-- Activity logs, Dashboard/analytics endpoints
+- [x] Notifications, CMS, Banners, Settings
+- [x] Activity logs list API
+- [x] Dashboard/analytics endpoints
+
+**Exit criteria:** ✅ Ops APIs live; dashboard cards/sales/inventory; RBAC on admin routes.
+
+Awaiting confirmation to start **Phase 7 — Frontend foundation**.
 
 ---
 

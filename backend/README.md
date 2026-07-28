@@ -75,6 +75,19 @@ Prices are integer **cents**. Cloudinary is optional in development (mock URLs i
 Checkout requires verified email. Without Stripe keys, use `POST /payments/mock-complete` in development.  
 Webhook: `POST /api/v1/payments/webhook` (raw body + Stripe signature).
 
+## Ops (Phase 6)
+
+| Area | Endpoints |
+|------|-----------|
+| Notifications | `GET /notifications`, mark read, admin create/broadcast |
+| Settings | `GET /settings/public/:key`, admin list/get/put |
+| CMS | Public `GET /cms/:slug`, admin CRUD under `/cms` + `/cms/admin/:id` |
+| Banners | Public `GET /banners`, admin CRUD |
+| Activity logs | `GET /activity-logs` |
+| Dashboard | `GET /dashboard/overview`, `/sales`, `/inventory` |
+
+Public settings keys: `general`, `seo`, `storefront`.
+
 ## Local MongoDB (Docker)
 
 ```bash

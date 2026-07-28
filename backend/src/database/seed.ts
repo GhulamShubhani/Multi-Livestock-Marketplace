@@ -11,6 +11,7 @@ import { hashPassword, isStrongPassword } from '../utils/password';
 import { permissionRepository } from '../modules/permission/repository/permission.repository';
 import { roleRepository } from '../modules/role/repository/role.repository';
 import { userRepository } from '../modules/user/repository/user.repository';
+import { settingsRepository } from '../modules/settings/repository/settings.repository';
 
 function describePermission(key: PermissionKey): { module: string; action: string; description: string } {
   const [module, action] = key.split(':');
@@ -164,10 +165,31 @@ async function seedSuperAdmin(): Promise<void> {
   logger.info('Super admin created', { email });
 }
 
+async function seedDefaultSettings(): Promise<void> {
+  const existing = await settingsRepository.findByKey('general');
+  if (existing) return;
+
+  await settingsRepository.upsert('general', {
+    siteName: 'Cat Marketplace',
+    supportEmail: env.SUPER_ADMIN_EMAIL,
+    defaultCurrency: env.DEFAULT_CURRENCY,
+  });
+  await settingsRepository.upsert('seo', {
+    title: 'Cat Marketplace',
+    description: 'Find your perfect feline companion',
+  });
+  await settingsRepository.upsert('storefront', {
+    enableWishlist: true,
+    enableReviews: true,
+  });
+  logger.info('Default settings seeded');
+}
+
 export async function runSeed(): Promise<void> {
   logger.info('Seeding RBAC data...');
   const permissionIds = await seedPermissions();
   await seedRoles(permissionIds);
   await seedSuperAdmin();
+  await seedDefaultSettings();
   logger.info('Seed complete');
 }

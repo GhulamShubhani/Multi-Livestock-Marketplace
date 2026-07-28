@@ -12,6 +12,12 @@ import couponRouter from '../modules/coupon/route/coupon.route';
 import orderRouter from '../modules/order/route/order.route';
 import paymentRouter from '../modules/payment/route/payment.route';
 import reviewRouter from '../modules/review/route/review.route';
+import notificationRouter from '../modules/notification/route/notification.route';
+import settingsRouter from '../modules/settings/route/settings.route';
+import cmsRouter from '../modules/cms/route/cms.route';
+import bannerRouter from '../modules/banner/route/banner.route';
+import activityLogRouter from '../modules/activity-log/route/activity-log.route';
+import dashboardRouter from '../modules/dashboard/route/dashboard.route';
 
 const router = Router();
 
@@ -28,5 +34,11 @@ router.use('/coupons', couponRouter);
 router.use('/orders', orderRouter);
 router.use('/payments', paymentRouter);
 router.use('/reviews', reviewRouter);
+router.use('/notifications', notificationRouter);
+router.use('/settings', settingsRouter);
+router.use('/cms', cmsRouter);
+router.use('/banners', bannerRouter);
+router.use('/activity-logs', activityLogRouter);
+router.use('/dashboard', dashboardRouter);
 
 export default router;
