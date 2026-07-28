@@ -1,0 +1,68 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: cat-mongo
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - cat_mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: cat-api
+    restart: unless-stopped
+    ports:
+      - '5000:5000'
+    env_file:
+      - ../backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://mongo:27017/cat_marketplace
+      COOKIE_SECURE: 'false'
+      SEED_ON_BOOT: 'true'
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # Optional local storefront (production-like). Prefer Vercel in real deploys.
+  frontend:
+    profiles: ['full']
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:5000/api/v1
+        NEXT_PUBLIC_APP_URL: http://localhost:3000
+        NEXT_PUBLIC_APP_NAME: Cat Marketplace
+    container_name: cat-frontend
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
+
+  # Optional local admin SPA behind nginx.
+  admin:
+    profiles: ['full']
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.admin
+      args:
+        VITE_API_URL: http://localhost:5000/api/v1
+        VITE_APP_NAME: Cat Marketplace Admin
+    container_name: cat-admin
+    ports:
+      - '5173:80'
+    depends_on:
+      - api
+
+volumes:
+  cat_mongo_data:

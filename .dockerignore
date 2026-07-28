@@ -1,0 +1,36 @@
+# Dependencies / builds
+node_modules
+**/node_modules
+dist
+**/dist
+.next
+**/.next
+out
+**/out
+coverage
+*.tsbuildinfo
+
+# Git / IDE
+.git
+.github
+.husky
+.idea
+.vscode
+*.md
+!README.md
+
+# Env / secrets
+.env
+.env.*
+!**/.env.example
+
+# Logs / temp
+logs
+*.log
+tmp
+temp
+uploads
+
+# Frontend/admin local
+frontend/.next
+admin/dist

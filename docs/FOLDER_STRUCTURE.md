@@ -21,9 +21,12 @@ cat-marketplace/
 │   └── IMPLEMENTATION_PLAN.md
 │
 ├── docker/
-│   ├── Dockerfile.backend       # (later)
-│   ├── docker-compose.yml       # (later)
-│   └── nginx.conf               # (optional)
+│   ├── Dockerfile.backend
+│   ├── Dockerfile.frontend
+│   ├── Dockerfile.admin
+│   ├── docker-compose.yml
+│   ├── nginx.conf
+│   └── README.md
 │
 ├── shared/
 │   ├── package.json
@@ -160,15 +163,15 @@ cat-marketplace/
 
 Every feature module exposes:
 
-| Layer | Responsibility |
-|-------|----------------|
-| `route/` | Wire path + middleware chain + controller |
-| `validator/` | express-validator chains |
-| `middleware/` | Module-specific guards (optional) |
-| `controller/` | HTTP adapter |
-| `dto/` / `interface/` | Request/response shapes |
-| `service/` | Domain logic |
-| `repository/` | Persistence |
-| `model/` | Mongoose schema |
+| Layer                 | Responsibility                            |
+| --------------------- | ----------------------------------------- |
+| `route/`              | Wire path + middleware chain + controller |
+| `validator/`          | express-validator chains                  |
+| `middleware/`         | Module-specific guards (optional)         |
+| `controller/`         | HTTP adapter                              |
+| `dto/` / `interface/` | Request/response shapes                   |
+| `service/`            | Domain logic                              |
+| `repository/`         | Persistence                               |
+| `model/`              | Mongoose schema                           |
 
 No controller imports Mongoose models directly.

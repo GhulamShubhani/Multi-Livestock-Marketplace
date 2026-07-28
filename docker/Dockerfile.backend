@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1
+
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY backend/package.json ./backend/
+COPY shared/package.json ./shared/
+COPY frontend/package.json ./frontend/
+COPY admin/package.json ./admin/
+RUN npm ci --workspace=@cat-marketplace/backend --include-workspace-root
+
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/backend/node_modules ./backend/node_modules
+COPY package.json package-lock.json ./
+COPY backend ./backend
+COPY shared ./shared
+RUN npm run build --workspace=@cat-marketplace/backend
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+RUN addgroup -S app && adduser -S app -G app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/backend/node_modules ./backend/node_modules
+COPY --from=build /app/backend/dist ./backend/dist
+COPY --from=build /app/backend/package.json ./backend/package.json
+COPY package.json ./
+USER app
+EXPOSE 5000
+CMD ["node", "backend/dist/server.js"]

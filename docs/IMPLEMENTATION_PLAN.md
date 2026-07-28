@@ -100,16 +100,18 @@ Awaiting confirmation to start **Phase 9 — Admin foundation**.
 
 **Exit criteria:** ✅ Admin modules wired to `/api/v1` with permission gates.
 
-Awaiting confirmation to start **Phase 11 — Tooling & deploy**.
-
 ---
 
 ## Phase 11 — Tooling & deploy
 
-- Docker compose
-- Husky + lint-staged
-- Deploy docs (Vercel + Railway/Render)
-- README runbooks
+- [x] Docker compose + Dockerfiles (API, frontend, admin)
+- [x] Husky + lint-staged + Prettier
+- [x] GitHub Actions CI (lint + builds)
+- [x] Deploy docs (Vercel + Railway/Render) + runbook
+
+**Exit criteria:** ✅ Tooling and deploy documentation complete.
+
+**All planned phases (0–11) complete.**
 
 ---
 
