@@ -11,7 +11,7 @@ Production-ready **Cat Marketplace** monorepo with three independent application
 
 ## Status
 
-**Phases 0–8 complete.** Backend API and customer storefront features are in place. Next: **Phase 9 — Admin foundation**.
+**Phases 0–9 complete.** Backend, customer storefront, and admin CRM foundation are in place. Next: **Phase 10 — Admin modules**.
 
 ## Documentation
 

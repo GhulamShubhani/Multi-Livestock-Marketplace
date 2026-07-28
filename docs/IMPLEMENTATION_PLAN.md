@@ -80,8 +80,14 @@ Awaiting confirmation to start **Phase 9 — Admin foundation**.
 
 ## Phase 9 — Admin foundation
 
-- Vite React + MUI dashboard shell
-- Auth guard, sidebar by permissions, theme
+- [x] Vite React + MUI dashboard shell
+- [x] Auth / guest guards + staff role check
+- [x] Sidebar filtered by permissions
+- [x] Login + dashboard + module placeholders
+
+**Exit criteria:** ✅ Admin CRM foundation builds on port 5173.
+
+Awaiting confirmation to start **Phase 10 — Admin modules**.
 
 ---
 
