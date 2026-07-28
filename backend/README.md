@@ -62,6 +62,19 @@ Mutating routes require `X-CSRF-Token`. Admin user routes require `users:*` perm
 Cat filters: `q`, `breed`, `category`, `gender`, `featured`, `minPrice`, `maxPrice`, `sort`.  
 Prices are integer **cents**. Cloudinary is optional in development (mock URLs if unset).
 
+## Commerce (Phase 5)
+
+| Area | Endpoints |
+|------|-----------|
+| Wishlist | `GET/POST/DELETE /wishlist/:catId` |
+| Coupons | `POST /coupons/validate`, admin CRUD `/coupons` |
+| Orders | `POST /orders`, `GET /orders/me`, admin list/status/cancel |
+| Payments | `POST /payments/checkout-session`, `/payment-intent`, webhook, refunds |
+| Reviews | `GET /reviews?catId=`, `POST /reviews`, moderate `/reviews/:id/status` |
+
+Checkout requires verified email. Without Stripe keys, use `POST /payments/mock-complete` in development.  
+Webhook: `POST /api/v1/payments/webhook` (raw body + Stripe signature).
+
 ## Local MongoDB (Docker)
 
 ```bash

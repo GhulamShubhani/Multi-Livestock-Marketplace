@@ -58,6 +58,23 @@ const envSchema = z.object({
   CLOUDINARY_FOLDER: z.string().default('cat-marketplace'),
   UPLOAD_MAX_FILE_SIZE_MB: z.coerce.number().positive().default(5),
   UPLOAD_MAX_FILES: z.coerce.number().int().positive().default(10),
+
+  STRIPE_SECRET_KEY: z.string().optional().default(''),
+  STRIPE_WEBHOOK_SECRET: z.string().optional().default(''),
+  STRIPE_SUCCESS_URL: z
+    .string()
+    .optional()
+    .default('')
+    .transform((v) => (v ? v : undefined))
+    .pipe(z.string().url().optional()),
+  STRIPE_CANCEL_URL: z
+    .string()
+    .optional()
+    .default('')
+    .transform((v) => (v ? v : undefined))
+    .pipe(z.string().url().optional()),
+  TAX_RATE_BPS: z.coerce.number().int().min(0).default(0),
+  SHIPPING_FLAT_CENTS: z.coerce.number().int().min(0).default(0),
 });
 
 const parsed = envSchema.safeParse(process.env);

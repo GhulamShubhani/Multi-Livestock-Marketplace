@@ -13,6 +13,7 @@ import { globalRateLimiter } from './middlewares/rateLimiter';
 import { sanitizeInput } from './middlewares/sanitize';
 import { notFoundHandler } from './middlewares/notFound';
 import { errorHandler } from './middlewares/errorHandler';
+import { stripeWebhookHandler } from './modules/payment/controller/payment.controller';
 import routes from './routes';
 
 export function createApp(): Application {
@@ -34,6 +35,9 @@ export function createApp(): Application {
   app.use(cors(corsOptions));
   app.use(compression());
   app.use(cookieParser());
+
+  // Stripe webhook needs raw body — mount before JSON parser
+  app.post(`${env.API_PREFIX}/payments/webhook`, express.raw({ type: 'application/json' }), stripeWebhookHandler);
 
   app.use(express.json({ limit: env.BODY_LIMIT }));
   app.use(express.urlencoded({ extended: true, limit: env.BODY_LIMIT }));
