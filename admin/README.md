@@ -14,7 +14,6 @@ Vite + React back-office for Cat Marketplace.
 ## Run
 
 ```bash
-# from monorepo root
 cp admin/.env.example admin/.env
 npm install
 npm run dev:backend
@@ -24,8 +23,8 @@ npm run dev:admin
 App: http://localhost:5173  
 Default super admin: `superadmin@catmarketplace.local` / `SuperAdmin!23456`
 
-## Phase 9
+## Modules
 
-Foundation only: login, auth/guest guards, permission-filtered sidebar, dashboard shell, module placeholders.
+Dashboard, Reports, Cats, Categories, Breeds, Orders, Payments, Coupons, Reviews, CMS, Banners, Notifications, Users, Roles (info), Activity logs, Settings.
 
-Phase 10 adds full CRM modules.
+Sidebar items are filtered by the signed-in user's permissions.

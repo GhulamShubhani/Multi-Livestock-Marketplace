@@ -87,13 +87,20 @@ Awaiting confirmation to start **Phase 9 — Admin foundation**.
 
 **Exit criteria:** ✅ Admin CRM foundation builds on port 5173.
 
-Awaiting confirmation to start **Phase 10 — Admin modules**.
-
 ---
 
 ## Phase 10 — Admin modules (sub-steps)
 
-Dashboard → Users → Cats → … → Reports/Settings
+- [x] Dashboard overview + Reports (sales/inventory)
+- [x] Users (+ roles info page; roles CRUD API not mounted)
+- [x] Catalog: cats, categories, breeds
+- [x] Commerce: orders, payments, coupons, reviews
+- [x] Content: CMS, banners, notifications
+- [x] System: settings, activity logs
+
+**Exit criteria:** ✅ Admin modules wired to `/api/v1` with permission gates.
+
+Awaiting confirmation to start **Phase 11 — Tooling & deploy**.
 
 ---
 

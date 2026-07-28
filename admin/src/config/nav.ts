@@ -21,7 +21,6 @@ export type NavItem = {
   path: string;
   icon: ElementType;
   permissions?: string[];
-  placeholder?: boolean;
 };
 
 export type NavSection = {
@@ -33,113 +32,52 @@ export const navSections: NavSection[] = [
   {
     title: 'Overview',
     items: [
-      {
-        label: 'Dashboard',
-        path: '/',
-        icon: DashboardOutlinedIcon,
-        permissions: ['dashboard:read'],
-      },
-      {
-        label: 'Reports',
-        path: '/reports',
-        icon: AssessmentOutlinedIcon,
-        permissions: ['reports:read'],
-        placeholder: true,
-      },
+      { label: 'Dashboard', path: '/', icon: DashboardOutlinedIcon, permissions: ['dashboard:read'] },
+      { label: 'Reports', path: '/reports', icon: AssessmentOutlinedIcon, permissions: ['reports:read'] },
     ],
   },
   {
     title: 'Catalog',
     items: [
-      { label: 'Cats', path: '/cats', icon: PetsOutlinedIcon, permissions: ['cats:read'], placeholder: true },
-      {
-        label: 'Categories',
-        path: '/categories',
-        icon: CategoryOutlinedIcon,
-        permissions: ['categories:read'],
-        placeholder: true,
-      },
-      { label: 'Breeds', path: '/breeds', icon: SpaOutlinedIcon, permissions: ['breeds:read'], placeholder: true },
+      { label: 'Cats', path: '/cats', icon: PetsOutlinedIcon, permissions: ['cats:read'] },
+      { label: 'Categories', path: '/categories', icon: CategoryOutlinedIcon, permissions: ['categories:read'] },
+      { label: 'Breeds', path: '/breeds', icon: SpaOutlinedIcon, permissions: ['breeds:read'] },
     ],
   },
   {
     title: 'Commerce',
     items: [
-      {
-        label: 'Orders',
-        path: '/orders',
-        icon: ShoppingBagOutlinedIcon,
-        permissions: ['orders:read'],
-        placeholder: true,
-      },
-      {
-        label: 'Payments',
-        path: '/payments',
-        icon: PaymentsOutlinedIcon,
-        permissions: ['payments:read'],
-        placeholder: true,
-      },
-      {
-        label: 'Coupons',
-        path: '/coupons',
-        icon: LocalOfferOutlinedIcon,
-        permissions: ['coupons:read'],
-        placeholder: true,
-      },
-      {
-        label: 'Reviews',
-        path: '/reviews',
-        icon: RateReviewOutlinedIcon,
-        permissions: ['reviews:moderate'],
-        placeholder: true,
-      },
+      { label: 'Orders', path: '/orders', icon: ShoppingBagOutlinedIcon, permissions: ['orders:read'] },
+      { label: 'Payments', path: '/payments', icon: PaymentsOutlinedIcon, permissions: ['payments:read'] },
+      { label: 'Coupons', path: '/coupons', icon: LocalOfferOutlinedIcon, permissions: ['coupons:read'] },
+      { label: 'Reviews', path: '/reviews', icon: RateReviewOutlinedIcon, permissions: ['reviews:moderate'] },
     ],
   },
   {
     title: 'Content',
     items: [
-      { label: 'CMS', path: '/cms', icon: ArticleOutlinedIcon, permissions: ['cms:read'], placeholder: true },
-      {
-        label: 'Banners',
-        path: '/banners',
-        icon: ViewCarouselOutlinedIcon,
-        permissions: ['banners:read'],
-        placeholder: true,
-      },
+      { label: 'CMS', path: '/cms', icon: ArticleOutlinedIcon, permissions: ['cms:read'] },
+      { label: 'Banners', path: '/banners', icon: ViewCarouselOutlinedIcon, permissions: ['banners:read'] },
       {
         label: 'Notifications',
         path: '/notifications',
         icon: CampaignOutlinedIcon,
-        permissions: ['notifications:read'],
-        placeholder: true,
+        permissions: ['notifications:create'],
       },
     ],
   },
   {
     title: 'System',
     items: [
-      { label: 'Users', path: '/users', icon: PeopleOutlinedIcon, permissions: ['users:read'], placeholder: true },
-      {
-        label: 'Roles',
-        path: '/roles',
-        icon: AdminPanelSettingsOutlinedIcon,
-        permissions: ['roles:read'],
-        placeholder: true,
-      },
+      { label: 'Users', path: '/users', icon: PeopleOutlinedIcon, permissions: ['users:read'] },
+      { label: 'Roles', path: '/roles', icon: AdminPanelSettingsOutlinedIcon, permissions: ['roles:read'] },
       {
         label: 'Activity',
         path: '/activity-logs',
         icon: HistoryOutlinedIcon,
         permissions: ['activity_logs:read'],
-        placeholder: true,
       },
-      {
-        label: 'Settings',
-        path: '/settings',
-        icon: SettingsOutlinedIcon,
-        permissions: ['settings:read'],
-        placeholder: true,
-      },
+      { label: 'Settings', path: '/settings', icon: SettingsOutlinedIcon, permissions: ['settings:read'] },
     ],
   },
 ];

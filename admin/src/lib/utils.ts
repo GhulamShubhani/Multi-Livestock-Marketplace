@@ -14,3 +14,28 @@ export function hasPermission(userPermissions: string[] | undefined, required?: 
 export function hasAnyPermission(userPermissions: string[] | undefined, required: string[]) {
   return hasPermission(userPermissions, required);
 }
+
+export function formatMoney(cents: number, currency = 'USD') {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
+}
+
+export function formatDate(value?: string | Date | null) {
+  if (!value) return '—';
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(value));
+}
+
+export function namedRef(ref: { name?: string; _id?: string } | string | null | undefined) {
+  if (!ref) return '—';
+  if (typeof ref === 'string') return ref;
+  return ref.name ?? ref._id ?? '—';
+}
+
+export function idOf(ref: { _id?: string; id?: string } | string | null | undefined) {
+  if (!ref) return '';
+  if (typeof ref === 'string') return ref;
+  return ref._id ?? ref.id ?? '';
+}

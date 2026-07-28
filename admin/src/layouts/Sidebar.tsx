@@ -75,13 +75,7 @@ export function Sidebar() {
                       <ListItemIcon sx={{ minWidth: 40 }}>
                         <Icon fontSize="small" />
                       </ListItemIcon>
-                      <ListItemText
-                        primary={item.label}
-                        secondary={item.placeholder ? 'Soon' : undefined}
-                        slotProps={{
-                          secondary: { sx: { fontSize: 11 } },
-                        }}
-                      />
+                      <ListItemText primary={item.label} />
                     </ListItemButton>
                   );
                 })}
