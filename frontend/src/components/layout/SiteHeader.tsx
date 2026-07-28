@@ -22,10 +22,12 @@ import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import { useTheme } from 'next-themes';
 import { useCartStore } from '@/stores/cart';
 import { useWishlistStore } from '@/stores/wishlist';
 import { useUiStore } from '@/stores/ui';
+import { useAuthStore } from '@/stores/auth';
 import { APP_NAME } from '@/lib/utils';
 
 const navLinks = [
@@ -40,6 +42,7 @@ export function SiteHeader() {
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const mobileNavOpen = useUiStore((s) => s.mobileNavOpen);
   const setMobileNavOpen = useUiStore((s) => s.setMobileNavOpen);
+  const user = useAuthStore((s) => s.user);
 
   return (
     <>
@@ -108,15 +111,28 @@ export function SiteHeader() {
                   <ShoppingBagOutlinedIcon />
                 </Badge>
               </IconButton>
-              <Button
-                component={Link}
-                href="/auth/login"
-                variant="contained"
-                color="primary"
-                sx={{ display: { xs: 'none', sm: 'inline-flex' }, ml: 1 }}
-              >
-                Sign in
-              </Button>
+              {user ? (
+                <Button
+                  component={Link}
+                  href="/profile"
+                  variant="contained"
+                  color="primary"
+                  startIcon={<PersonOutlinedIcon />}
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' }, ml: 1 }}
+                >
+                  {user.firstName}
+                </Button>
+              ) : (
+                <Button
+                  component={Link}
+                  href="/auth/login"
+                  variant="contained"
+                  color="primary"
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' }, ml: 1 }}
+                >
+                  Sign in
+                </Button>
+              )}
             </Stack>
           </Toolbar>
         </Container>
@@ -143,8 +159,12 @@ export function SiteHeader() {
                 <ListItemText primary={link.label} />
               </ListItemButton>
             ))}
-            <ListItemButton component={Link} href="/auth/login" onClick={() => setMobileNavOpen(false)}>
-              <ListItemText primary="Sign in" />
+            <ListItemButton
+              component={Link}
+              href={user ? '/profile' : '/auth/login'}
+              onClick={() => setMobileNavOpen(false)}
+            >
+              <ListItemText primary={user ? 'Profile' : 'Sign in'} />
             </ListItemButton>
           </List>
         </Box>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { HomeHero } from '@/components/home/HomeHero';
 import { HomeIntro } from '@/components/home/HomeIntro';
+import { HomeFeatured } from '@/components/home/HomeFeatured';
 import { APP_NAME } from '@/lib/utils';
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export default function HomePage() {
     <>
       <HomeHero />
       <HomeIntro />
+      <HomeFeatured />
     </>
   );
 }

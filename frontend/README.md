@@ -8,7 +8,7 @@ Next.js 15 App Router storefront for Cat Marketplace.
 - Tailwind CSS v4
 - Material UI
 - TanStack Query + Axios
-- Zustand (cart / wishlist / UI)
+- Zustand (cart / wishlist / auth / UI)
 - Framer Motion
 - next-themes (dark mode)
 
@@ -18,22 +18,21 @@ Next.js 15 App Router storefront for Cat Marketplace.
 # from monorepo root
 cp frontend/.env.example frontend/.env.local
 npm install
+npm run dev:backend
 npm run dev:frontend
 ```
 
 App: http://localhost:3000  
 API: `NEXT_PUBLIC_API_URL` (default `http://localhost:5000/api/v1`)
 
-## Structure
+## Routes
 
-```text
-src/
-  app/                 # routes + SEO metadata
-  components/          # layout, home, providers
-  lib/                 # api client, query, utils
-  stores/              # zustand
-  theme/               # MUI light/dark themes
-  types/
-```
+| Path | Notes |
+|------|-------|
+| `/` | Hero + featured cats |
+| `/cats`, `/cats/[slug]` | Catalog + detail |
+| `/auth/*` | Login, register, forgot/reset, verify |
+| `/cart`, `/wishlist`, `/checkout` | Commerce |
+| `/profile`, `/orders/[id]` | Account |
 
-Phase 7 = foundation. Feature pages (auth, catalog, checkout) land in Phase 8.
+Checkout requires a verified email. Dev mock payment is available on the checkout page.

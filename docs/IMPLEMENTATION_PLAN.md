@@ -62,13 +62,19 @@ Work proceeds **one module/phase at a time**. After each phase, wait for your co
 
 **Exit criteria:** ✅ Storefront foundation builds; providers and brand shell ready for feature wiring.
 
-Awaiting confirmation to start **Phase 8 — Frontend features**.
-
 ---
 
 ## Phase 8 — Frontend features (sub-steps)
 
-Landing → About/Contact → Catalog → Auth → Wishlist/Cart → Checkout → Profile/Orders
+- [x] Landing polish (featured cats) + About / Contact
+- [x] Catalog list + filters + cat detail + reviews
+- [x] Auth (login / register / forgot / reset / verify) + session bootstrap
+- [x] Wishlist (local + API sync) + cart
+- [x] Checkout (order + mock payment) + profile / orders
+
+**Exit criteria:** ✅ Customer storefront flows wired to `/api/v1`.
+
+Awaiting confirmation to start **Phase 9 — Admin foundation**.
 
 ---
 
