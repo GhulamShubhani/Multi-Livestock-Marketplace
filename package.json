@@ -24,7 +24,7 @@
     "docker:up:full": "docker compose -f docker/docker-compose.yml --profile full up -d --build",
     "docker:down": "docker compose -f docker/docker-compose.yml down",
     "docker:logs": "docker compose -f docker/docker-compose.yml logs -f api",
-    "prepare": "husky"
+    "prepare": "node -e \"try{require('child_process').execSync('husky',{stdio:'inherit'})}catch(e){}\""
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md,css}": [

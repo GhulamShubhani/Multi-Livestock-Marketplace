@@ -55,12 +55,15 @@ Also configure Cloudinary + Stripe when leaving mock mode.
 
 ### Render
 
-1. New **Web Service** from the repo.
-2. **Dockerfile** path: `docker/Dockerfile.backend` (root context).
-3. Or native Node:
-   - Build: `npm ci && npm run build --workspace=@cat-marketplace/backend`
-   - Start: `npm run start --workspace=@cat-marketplace/backend`
-4. Health check path: `/api/v1/health`
+Prefer the repo root `render.yaml` blueprint (API only), or configure manually:
+
+1. New **Web Service** from the repo (root = monorepo root, not `frontend/`).
+2. **Dockerfile** path: `docker/Dockerfile.backend` (root context), **or** native Node:
+   - **Build:** `npm ci && npm run build --workspace=@cat-marketplace/backend`
+   - **Start:** `npm run start --workspace=@cat-marketplace/backend`
+   - Do **not** put a space after `--` (wrong: `npm run build -- workspace=...`). That runs the root `build` and also builds frontend/admin.
+3. Health check path: `/api/v1/health`
+4. Set `NODE_ENV=production` (or leave unset). A non-standard value breaks Next if the wrong build runs; set `HUSKY=0` so install skips git hooks.
 
 ### Post-deploy
 
@@ -75,9 +78,10 @@ Update Stripe webhook endpoint to `https://api.../api/v1/payments/webhook` and s
 
 ## 3. Frontend (Vercel)
 
-1. Import monorepo → set **Root Directory** to `frontend`.
+1. Import monorepo → set **Root Directory** to `frontend` (single Next.js project — not the multi-service preset unless you intend to host the API on Vercel too).
 2. Framework: Next.js.
-3. Environment:
+3. If install fails on `husky: command not found`, set env `HUSKY=0` (repo `prepare` is also CI-safe).
+4. Environment:
 
 ```text
 NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
