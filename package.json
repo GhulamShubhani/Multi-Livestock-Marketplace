@@ -18,6 +18,8 @@
     "build:admin": "npm run build --workspace=@cat-marketplace/admin",
     "build": "npm run build:backend",
     "build:all": "npm run build:backend && npm run build:frontend && npm run build:admin",
+    "start": "node backend/dist/server.js",
+    "start:backend": "npm run start --workspace=@cat-marketplace/backend",
     "lint": "npm run lint --workspaces --if-present",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
