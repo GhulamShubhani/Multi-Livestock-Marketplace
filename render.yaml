@@ -7,7 +7,7 @@ services:
     plan: free
     region: oregon
     rootDir: .
-    buildCommand: npm ci && npm run build --workspace=@cat-marketplace/backend
+    buildCommand: npm ci && npm run build:backend
     startCommand: npm run start --workspace=@cat-marketplace/backend
     healthCheckPath: /api/v1/health
     envVars:

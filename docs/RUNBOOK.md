@@ -41,7 +41,8 @@ Default super admin (seeded when `SEED_ON_BOOT=true`):
 ## Common scripts
 
 ```bash
-npm run build                 # all apps
+npm run build                 # backend only (safe for API hosts)
+npm run build:all             # backend + frontend + admin
 npm run build:backend
 npm run build:frontend
 npm run build:admin

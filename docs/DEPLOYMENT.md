@@ -48,7 +48,7 @@ Also configure Cloudinary + Stripe when leaving mock mode.
 
 1. New project → Deploy from GitHub repo.
 2. Set root / build:
-   - **Build command:** `npm ci && npm run build --workspace=@cat-marketplace/backend`
+   - **Build command:** `npm ci && npm run build:backend`
    - **Start command:** `npm run start --workspace=@cat-marketplace/backend`
 3. Or use `docker/Dockerfile.backend` as the Dockerfile path with context = monorepo root.
 4. Attach the public URL (e.g. `https://api.yourdomain.com`).
@@ -59,11 +59,11 @@ Prefer the repo root `render.yaml` blueprint (API only), or configure manually:
 
 1. New **Web Service** from the repo (root = monorepo root, not `frontend/`).
 2. **Dockerfile** path: `docker/Dockerfile.backend` (root context), **or** native Node:
-   - **Build:** `npm ci && npm run build --workspace=@cat-marketplace/backend`
+   - **Build:** `npm ci && npm run build:backend` (preferred — avoids `--workspace` typos)
    - **Start:** `npm run start --workspace=@cat-marketplace/backend`
-   - Do **not** put a space after `--` (wrong: `npm run build -- workspace=...`). That runs the root `build` and also builds frontend/admin.
+   - Avoid `npm run build -- workspace=...` (space after `--`). Root `npm run build` only compiles the API; use `npm run build:all` for every app.
 3. Health check path: `/api/v1/health`
-4. Set `NODE_ENV=production` (or leave unset). A non-standard value breaks Next if the wrong build runs; set `HUSKY=0` so install skips git hooks.
+4. Set `NODE_ENV=production` (not `development`). Set `HUSKY=0` so install skips git hooks.
 
 ### Post-deploy
 
