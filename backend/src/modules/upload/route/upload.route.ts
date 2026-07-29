@@ -11,6 +11,8 @@ import {
   handleMulterError,
   uploadMultipleImages,
   uploadSingleImage,
+  uploadMultipleVideos,
+  uploadSingleVideo,
 } from '../middleware/multer.middleware';
 
 const uploadLimiter = rateLimit({
@@ -42,6 +44,20 @@ router.post(
   authorize(PERMISSIONS.UPLOADS_CREATE),
   handleMulterError(uploadMultipleImages),
   uploadController.uploadMany,
+);
+
+router.post(
+  '/video',
+  authorize(PERMISSIONS.UPLOADS_CREATE),
+  handleMulterError(uploadSingleVideo),
+  uploadController.uploadVideo,
+);
+
+router.post(
+  '/videos',
+  authorize(PERMISSIONS.UPLOADS_CREATE),
+  handleMulterError(uploadMultipleVideos),
+  uploadController.uploadVideos,
 );
 router.delete(
   '/',

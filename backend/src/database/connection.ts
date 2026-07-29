@@ -17,7 +17,31 @@ export async function connectDatabase(): Promise<typeof mongoose> {
     logger.warn('MongoDB disconnected');
   });
 
-  await mongoose.connect(env.MONGODB_URI);
+  // Windows antivirus / SSL inspection often breaks Atlas TLS ("unable to verify the first certificate").
+  const allowInvalidCerts = process.env.MONGODB_TLS_ALLOW_INVALID_CERTS === 'true';
+
+  try {
+    await mongoose.connect(env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 20_000,
+      ...(allowInvalidCerts ? { tlsAllowInvalidCertificates: true } : {}),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const cause =
+      error instanceof Error && 'cause' in error && error.cause instanceof Error
+        ? error.cause.message
+        : undefined;
+
+    if (message.includes('whitelist') || cause?.includes('certificate')) {
+      logger.error('MongoDB Atlas connection failed', {
+        error: message,
+        cause,
+        hint: 'Real cause is often TLS cert verification (not IP whitelist). For local dev set MONGODB_TLS_ALLOW_INVALID_CERTS=true in backend/.env.',
+      });
+    }
+
+    throw error;
+  }
 
   return mongoose;
 }
@@ -27,7 +51,8 @@ export async function disconnectDatabase(): Promise<void> {
   logger.info('MongoDB connection closed');
 }
 
-export function getDatabaseStatus(): 'connected' | 'disconnected' | 'connecting' | 'disconnecting' | 'unknown' {
+export function getDatabaseStatus():
+  'connected' | 'disconnected' | 'connecting' | 'disconnecting' | 'unknown' {
   switch (mongoose.connection.readyState) {
     case 0:
       return 'disconnected';

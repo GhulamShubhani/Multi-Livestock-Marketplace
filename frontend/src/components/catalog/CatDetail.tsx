@@ -24,6 +24,30 @@ import { formatMoney } from '@/lib/utils';
 import { useCartStore } from '@/stores/cart';
 import { useWishlistStore } from '@/stores/wishlist';
 import { useAuthStore } from '@/stores/auth';
+import type { MediaImage, MediaVideo } from '@/types/api';
+
+type GalleryItem =
+  | { kind: 'image'; key: string; url: string; alt?: string }
+  | { kind: 'video'; key: string; url: string; alt?: string };
+
+function buildGallery(images: MediaImage[] = [], videos: MediaVideo[] = []): GalleryItem[] {
+  const sortedImages = [...images].sort(
+    (a, b) => Number(Boolean(b.isPrimary)) - Number(Boolean(a.isPrimary)),
+  );
+  const imageItems: GalleryItem[] = sortedImages.map((img, i) => ({
+    kind: 'image',
+    key: img.publicId ?? `img-${i}-${img.url}`,
+    url: img.url,
+    alt: img.alt,
+  }));
+  const videoItems: GalleryItem[] = videos.map((vid, i) => ({
+    kind: 'video',
+    key: vid.publicId ?? `vid-${i}-${vid.url}`,
+    url: vid.url,
+    alt: vid.alt,
+  }));
+  return [...imageItems, ...videoItems];
+}
 
 export function CatDetail({ slug }: { slug: string }) {
   const catQuery = useQuery({
@@ -44,6 +68,17 @@ export function CatDetail({ slug }: { slug: string }) {
   const removeWish = useWishlistStore((s) => s.removeItem);
   const user = useAuthStore((s) => s.user);
   const [added, setAdded] = React.useState(false);
+  const [activeKey, setActiveKey] = React.useState<string | null>(null);
+
+  const gallery = React.useMemo(() => (cat ? buildGallery(cat.images, cat.videos) : []), [cat]);
+
+  React.useEffect(() => {
+    if (!gallery.length) {
+      setActiveKey(null);
+      return;
+    }
+    setActiveKey((prev) => (prev && gallery.some((g) => g.key === prev) ? prev : gallery[0].key));
+  }, [gallery]);
 
   if (catQuery.isLoading) {
     return (
@@ -64,6 +99,7 @@ export function CatDetail({ slug }: { slug: string }) {
   const image = primaryImage(cat.images);
   const liked = wishHas(cat._id);
   const reviews = reviewsQuery.data?.data.reviews ?? [];
+  const active = gallery.find((g) => g.key === activeKey) ?? gallery[0];
 
   const onAddCart = () => {
     addCart({
@@ -92,25 +128,113 @@ export function CatDetail({ slug }: { slug: string }) {
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={5}>
-        <Box
-          sx={{
-            flex: 1.1,
-            aspectRatio: { md: '4 / 5' },
-            minHeight: 320,
-            overflow: 'hidden',
-            backgroundColor: 'action.hover',
-          }}
-        >
-          {image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={image} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        <Stack spacing={1.5} sx={{ flex: 1.1 }}>
+          <Box
+            sx={{
+              aspectRatio: { md: '4 / 5' },
+              minHeight: 320,
+              overflow: 'hidden',
+              backgroundColor: 'action.hover',
+            }}
+          >
+            {active?.kind === 'image' ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={active.url}
+                alt={active.alt || cat.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : active?.kind === 'video' ? (
+              <video
+                key={active.url}
+                src={active.url}
+                controls
+                playsInline
+                style={{ width: '100%', height: '100%', objectFit: 'cover', background: '#000' }}
+              />
+            ) : null}
+          </Box>
+
+          {gallery.length > 1 ? (
+            <Stack direction="row" spacing={1} sx={{ overflowX: 'auto', pb: 0.5 }}>
+              {gallery.map((item) => {
+                const selected = item.key === active?.key;
+                return (
+                  <Box
+                    key={item.key}
+                    component="button"
+                    type="button"
+                    onClick={() => setActiveKey(item.key)}
+                    aria-label={item.kind === 'video' ? 'Play video' : 'View image'}
+                    sx={{
+                      flex: '0 0 auto',
+                      width: 84,
+                      height: 64,
+                      p: 0,
+                      border: '2px solid',
+                      borderColor: selected ? 'secondary.main' : 'divider',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      backgroundColor: 'action.hover',
+                      position: 'relative',
+                    }}
+                  >
+                    {item.kind === 'image' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.url}
+                        alt=""
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                      />
+                    ) : (
+                      <>
+                        <video
+                          src={item.url}
+                          muted
+                          preload="metadata"
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                        />
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            display: 'grid',
+                            placeItems: 'center',
+                            backgroundColor: 'rgba(0,0,0,0.35)',
+                            color: '#fff',
+                            fontSize: 11,
+                            fontWeight: 700,
+                            letterSpacing: '0.04em',
+                          }}
+                        >
+                          VIDEO
+                        </Box>
+                      </>
+                    )}
+                  </Box>
+                );
+              })}
+            </Stack>
           ) : null}
-        </Box>
+        </Stack>
 
         <Stack spacing={2} sx={{ flex: 1 }}>
           <Typography
             variant="h2"
-            sx={{ fontFamily: 'var(--font-fraunces), Georgia, serif', fontSize: { xs: '2rem', md: '3rem' } }}
+            sx={{
+              fontFamily: 'var(--font-fraunces), Georgia, serif',
+              fontSize: { xs: '2rem', md: '3rem' },
+            }}
           >
             {cat.name}
           </Typography>

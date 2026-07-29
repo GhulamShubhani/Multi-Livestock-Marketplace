@@ -1,5 +1,5 @@
 import type { Document, Types } from 'mongoose';
-import type { CatImage, SeoFields } from '../../../types/media';
+import type { CatImage, CatVideo, SeoFields } from '../../../types/media';
 
 export type CatGender = 'male' | 'female' | 'unknown';
 export type CatStatus = 'draft' | 'available' | 'reserved' | 'sold' | 'archived';
@@ -21,6 +21,7 @@ export interface ICat {
   stock: number;
   status: CatStatus;
   images: CatImage[];
+  videos: CatVideo[];
   attributes?: Record<string, string>;
   vaccinated: boolean;
   neutered: boolean;

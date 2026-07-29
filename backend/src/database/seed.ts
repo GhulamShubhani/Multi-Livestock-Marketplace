@@ -1,19 +1,20 @@
 import { Types } from 'mongoose';
 import { logger } from '../config/logger';
 import { env } from '../config/env';
-import {
-  ALL_PERMISSION_KEYS,
-  PERMISSIONS,
-  ROLES,
-  type PermissionKey,
-} from '../constants/auth';
+import { ALL_PERMISSION_KEYS, PERMISSIONS, ROLES, type PermissionKey } from '../constants/auth';
 import { hashPassword, isStrongPassword } from '../utils/password';
 import { permissionRepository } from '../modules/permission/repository/permission.repository';
 import { roleRepository } from '../modules/role/repository/role.repository';
 import { userRepository } from '../modules/user/repository/user.repository';
 import { settingsRepository } from '../modules/settings/repository/settings.repository';
+import { breedRepository } from '../modules/breed/repository/breed.repository';
+import { categoryRepository } from '../modules/category/repository/category.repository';
 
-function describePermission(key: PermissionKey): { module: string; action: string; description: string } {
+function describePermission(key: PermissionKey): {
+  module: string;
+  action: string;
+  description: string;
+} {
   const [module, action] = key.split(':');
   return {
     module,
@@ -70,6 +71,40 @@ const STAFF_PERMISSIONS: PermissionKey[] = [
 ];
 
 const CUSTOMER_PERMISSIONS: PermissionKey[] = [];
+
+const DEFAULT_CATEGORIES = [
+  { name: 'Kittens', slug: 'kittens', description: 'Cats under 12 months', sortOrder: 1 },
+  { name: 'Adult Cats', slug: 'adult-cats', description: 'Cats 1–7 years', sortOrder: 2 },
+  { name: 'Senior Cats', slug: 'senior-cats', description: 'Cats 8+ years', sortOrder: 3 },
+  { name: 'Purebred', slug: 'purebred', description: 'Pedigree / registered breeds', sortOrder: 4 },
+  {
+    name: 'Rescue / Mixed',
+    slug: 'rescue-mixed',
+    description: 'Rescue and mixed-breed cats',
+    sortOrder: 5,
+  },
+];
+
+const DEFAULT_BREEDS = [
+  { name: 'Persian', slug: 'persian', origin: 'Iran', temperament: ['Calm', 'Affectionate'] },
+  { name: 'Siamese', slug: 'siamese', origin: 'Thailand', temperament: ['Vocal', 'Social'] },
+  { name: 'Maine Coon', slug: 'maine-coon', origin: 'USA', temperament: ['Gentle', 'Playful'] },
+  {
+    name: 'British Shorthair',
+    slug: 'british-shorthair',
+    origin: 'UK',
+    temperament: ['Easygoing'],
+  },
+  { name: 'Ragdoll', slug: 'ragdoll', origin: 'USA', temperament: ['Docile', 'Affectionate'] },
+  { name: 'Bengal', slug: 'bengal', origin: 'USA', temperament: ['Active', 'Curious'] },
+  { name: 'Sphynx', slug: 'sphynx', origin: 'Canada', temperament: ['Energetic', 'Friendly'] },
+  {
+    name: 'Domestic Shorthair',
+    slug: 'domestic-shorthair',
+    origin: 'Worldwide',
+    temperament: ['Varied'],
+  },
+];
 
 async function seedPermissions(): Promise<Map<string, string>> {
   const items = ALL_PERMISSION_KEYS.map((key) => {
@@ -185,11 +220,40 @@ async function seedDefaultSettings(): Promise<void> {
   logger.info('Default settings seeded');
 }
 
+async function seedCatalogDefaults(): Promise<void> {
+  let categoriesCreated = 0;
+  for (const category of DEFAULT_CATEGORIES) {
+    const exists = await categoryRepository.findBySlug(category.slug);
+    if (exists) continue;
+    await categoryRepository.create({
+      ...category,
+      isActive: true,
+    });
+    categoriesCreated += 1;
+  }
+
+  let breedsCreated = 0;
+  for (const breed of DEFAULT_BREEDS) {
+    const exists = await breedRepository.findBySlug(breed.slug);
+    if (exists) continue;
+    await breedRepository.create({
+      ...breed,
+      isActive: true,
+    });
+    breedsCreated += 1;
+  }
+
+  if (categoriesCreated || breedsCreated) {
+    logger.info('Catalog defaults seeded', { categoriesCreated, breedsCreated });
+  }
+}
+
 export async function runSeed(): Promise<void> {
   logger.info('Seeding RBAC data...');
   const permissionIds = await seedPermissions();
   await seedRoles(permissionIds);
   await seedSuperAdmin();
   await seedDefaultSettings();
+  await seedCatalogDefaults();
   logger.info('Seed complete');
 }

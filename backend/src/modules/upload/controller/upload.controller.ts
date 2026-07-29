@@ -23,6 +23,23 @@ export class UploadController {
     return ApiResponse.created(res, { images }, 'Images uploaded');
   });
 
+  uploadVideo = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) {
+      throw AppError.badRequest('Video file is required (field: video)');
+    }
+    const video = await uploadService.uploadVideo(req.file);
+    return ApiResponse.created(res, { video }, 'Video uploaded');
+  });
+
+  uploadVideos = asyncHandler(async (req: Request, res: Response) => {
+    const files = req.files as Express.Multer.File[] | undefined;
+    if (!files?.length) {
+      throw AppError.badRequest('Video files are required (field: videos)');
+    }
+    const videos = await uploadService.uploadVideos(files);
+    return ApiResponse.created(res, { videos }, 'Videos uploaded');
+  });
+
   remove = asyncHandler(async (req: Request, res: Response) => {
     await uploadService.deleteImage(req.body.publicId);
     return ApiResponse.success(res, null, 'Image deleted');

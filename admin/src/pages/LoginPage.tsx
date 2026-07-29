@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Alert, Box, Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  IconButton,
+  InputAdornment,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +31,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -63,7 +76,14 @@ export function LoginPage() {
           borderColor: 'divider',
         }}
       >
-        <Typography sx={{ fontFamily: '"Fraunces", Georgia, serif', fontSize: '1.8rem', fontWeight: 700, mb: 0.5 }}>
+        <Typography
+          sx={{
+            fontFamily: '"Fraunces", Georgia, serif',
+            fontSize: '1.8rem',
+            fontWeight: 700,
+            mb: 0.5,
+          }}
+        >
           {APP_NAME}
         </Typography>
         <Typography color="text.secondary" sx={{ mb: 3 }}>
@@ -86,11 +106,31 @@ export function LoginPage() {
             />
             <TextField
               label="Password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               error={Boolean(errors.password)}
               helperText={errors.password?.message}
               {...register('password')}
+              slotProps={{
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        onClick={() => setShowPassword((v) => !v)}
+                        onMouseDown={(e) => e.preventDefault()}
+                        edge="end"
+                      >
+                        {showPassword ? (
+                          <VisibilityOffOutlinedIcon fontSize="small" />
+                        ) : (
+                          <VisibilityOutlinedIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
             />
             <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
               {isSubmitting ? 'Signing in…' : 'Sign in'}

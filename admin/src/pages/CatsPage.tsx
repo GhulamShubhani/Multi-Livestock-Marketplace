@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ChangeEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Alert,
   Button,
+  Box,
   Dialog,
   DialogActions,
   DialogContent,
@@ -11,6 +13,7 @@ import {
   MenuItem,
   Stack,
   Switch,
+  Typography,
   TableCell,
   TableRow,
   TextField,
@@ -18,8 +21,11 @@ import {
 } from '@mui/material';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import VideocamOutlinedIcon from '@mui/icons-material/VideocamOutlined';
 import { useSnackbar } from 'notistack';
 import { catalogApi, type CatAdmin } from '@/lib/api/catalog';
+import { uploadsApi, type MediaAsset } from '@/lib/api/uploads';
 import { getApiErrorMessage } from '@/lib/api/client';
 import { formatMoney, hasPermission, namedRef } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth';
@@ -50,6 +56,14 @@ export function CatsPage() {
   const canUpdate = hasPermission(perms, 'cats:update');
   const canDelete = hasPermission(perms, 'cats:delete');
 
+  const MAX_TOTAL_MEDIA = 10;
+  const MAX_IMAGES = 5;
+  const MAX_VIDEOS = 5;
+  const existingCatImages = (cat: CatAdmin | null) =>
+    (cat?.images ?? []) as NonNullable<CatAdmin['images']>[number][];
+  const existingCatVideos = (cat: CatAdmin | null) =>
+    (cat?.videos ?? []) as NonNullable<NonNullable<CatAdmin['videos']>>[number][];
+
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
@@ -57,6 +71,65 @@ export function CatsPage() {
   const [editing, setEditing] = useState<CatAdmin | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [mainImage, setMainImage] = useState<
+    (MediaAsset & { alt?: string; isPrimary?: boolean }) | null
+  >(null);
+  const [additionalImages, setAdditionalImages] = useState<
+    (MediaAsset & { alt?: string; isPrimary?: boolean })[]
+  >([]);
+  const [uploadingMain, setUploadingMain] = useState(false);
+  const [uploadingMore, setUploadingMore] = useState(false);
+  const [additionalVideos, setAdditionalVideos] = useState<(MediaAsset & { alt?: string })[]>([]);
+  const [uploadingVideos, setUploadingVideos] = useState(false);
+
+  const resetMedia = () => {
+    setMainImage(null);
+    setAdditionalImages([]);
+    setAdditionalVideos([]);
+    setUploadingMain(false);
+    setUploadingMore(false);
+    setUploadingVideos(false);
+  };
+
+  const setMainFromImage = (img: MediaAsset & { alt?: string; isPrimary?: boolean }) => {
+    // When selecting a new primary image, move the previous primary into additional.
+    setAdditionalImages((prev) => {
+      const prevPrimary = mainImage;
+      const withoutSelected = prev.filter((i) => i.publicId !== img.publicId);
+      return prevPrimary
+        ? [...withoutSelected, { ...prevPrimary, isPrimary: false }]
+        : withoutSelected;
+    });
+    setMainImage(img);
+  };
+
+  const payloadImages = () => {
+    const main = mainImage ? [{ ...mainImage, isPrimary: true }] : [];
+    const rest = additionalImages.map((i) => ({ ...i, isPrimary: false }));
+    const out = [...main, ...rest];
+    if (out.length === 0) return undefined;
+    return out.map((i) => ({
+      url: i.url,
+      publicId: i.publicId,
+      isPrimary: i.isPrimary,
+      alt: i.alt,
+    }));
+  };
+
+  const payloadVideos = () => {
+    if (!additionalVideos.length) return undefined;
+    return additionalVideos.map((v) => ({ url: v.url, publicId: v.publicId, alt: v.alt }));
+  };
+
+  const mediaCount = (mainImage ? 1 : 0) + additionalImages.length + additionalVideos.length;
+  const remainingTotal = Math.max(0, MAX_TOTAL_MEDIA - mediaCount);
+  const remainingImagesAllowed = Math.max(
+    0,
+    MAX_IMAGES - (mainImage ? 1 : 0) - additionalImages.length,
+  );
+  const remainingVideosAllowed = Math.max(0, MAX_VIDEOS - additionalVideos.length);
+  const remainingImages = Math.min(remainingTotal, remainingImagesAllowed);
+  const remainingVideos = Math.min(remainingTotal, remainingVideosAllowed);
 
   const query = useQuery({
     queryKey: ['admin-cats', page, q, status],
@@ -80,6 +153,8 @@ export function CatsPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const images = payloadImages();
+      const videos = payloadVideos();
       const body = {
         name: form.name,
         description: form.description,
@@ -91,6 +166,8 @@ export function CatsPage() {
         stock: Number(form.stock),
         status: form.status,
         featured: form.featured,
+        ...(images ? { images } : {}),
+        ...(videos ? { videos } : {}),
       };
       if (editing) return catalogApi.updateCat(editing._id, body);
       return catalogApi.createCat(body);
@@ -149,6 +226,7 @@ export function CatsPage() {
               onClick={() => {
                 setEditing(null);
                 setForm(emptyForm);
+                resetMedia();
                 setOpen(true);
               }}
             />
@@ -198,7 +276,9 @@ export function CatsPage() {
           <TableRow key={cat._id} hover>
             <TableCell>
               {cat.name}
-              {cat.featured ? <Chip size="small" label="Featured" sx={{ ml: 1 }} color="secondary" /> : null}
+              {cat.featured ? (
+                <Chip size="small" label="Featured" sx={{ ml: 1 }} color="secondary" />
+              ) : null}
             </TableCell>
             <TableCell>{namedRef(cat.breed)}</TableCell>
             <TableCell align="right">{formatMoney(cat.price, cat.currency)}</TableCell>
@@ -239,6 +319,39 @@ export function CatsPage() {
                       status: cat.status,
                       featured: cat.featured,
                     });
+                    const images = existingCatImages(cat);
+                    const primary = images.find((i) => i.isPrimary) ?? images[0];
+                    setMainImage(
+                      primary
+                        ? {
+                            url: primary.url,
+                            publicId: primary.publicId,
+                            alt: primary.alt,
+                            isPrimary: true,
+                          }
+                        : null,
+                    );
+                    setAdditionalImages(
+                      primary
+                        ? images
+                            .filter((i) => i.publicId !== primary.publicId)
+                            .map((i) => ({
+                              url: i.url,
+                              publicId: i.publicId,
+                              alt: i.alt,
+                              isPrimary: false,
+                            }))
+                        : images.map((i) => ({
+                            url: i.url,
+                            publicId: i.publicId,
+                            alt: i.alt,
+                            isPrimary: false,
+                          })),
+                    );
+                    const vids = existingCatVideos(cat);
+                    setAdditionalVideos(
+                      vids.map((v) => ({ url: v.url, publicId: v.publicId, alt: v.alt })),
+                    );
                     setOpen(true);
                   }}
                 >
@@ -259,7 +372,11 @@ export function CatsPage() {
         <DialogTitle>{editing ? 'Edit cat' : 'Add cat'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField label="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <TextField
+              label="Name"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
             <TextField
               label="Description"
               multiline
@@ -272,6 +389,11 @@ export function CatsPage() {
               label="Breed"
               value={form.breed}
               onChange={(e) => setForm((f) => ({ ...f, breed: e.target.value }))}
+              helperText={
+                !breeds.data?.data.breeds?.length
+                  ? 'No breeds yet — add some under Catalog → Breeds (or restart API to seed defaults).'
+                  : undefined
+              }
             >
               {(breeds.data?.data.breeds ?? []).map((b) => (
                 <MenuItem key={b._id} value={b._id}>
@@ -284,6 +406,11 @@ export function CatsPage() {
               label="Category"
               value={form.category}
               onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              helperText={
+                !categories.data?.data.categories?.length
+                  ? 'No categories yet — add some under Catalog → Categories (or restart API to seed defaults).'
+                  : undefined
+              }
             >
               {(categories.data?.data.categories ?? []).map((c) => (
                 <MenuItem key={c._id} value={c._id}>
@@ -350,11 +477,326 @@ export function CatsPage() {
               }
               label="Featured"
             />
+
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="h6" sx={{ mb: 1 }}>
+                Media
+              </Typography>
+              <Alert severity="info" sx={{ mb: 2 }}>
+                Backend uploads accept <strong>images + videos</strong> (JPEG/PNG/WebP, and
+                MP4/WebM/MOV). Limit: up to {MAX_IMAGES} images + {MAX_VIDEOS} videos (total max{' '}
+                {MAX_TOTAL_MEDIA}). All media are optional.
+              </Alert>
+
+              <Stack spacing={2}>
+                <Box sx={{ border: '1px dashed', borderColor: 'divider', p: 2 }}>
+                  <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                    <ImageOutlinedIcon color="action" />
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography sx={{ fontWeight: 700 }}>Main image (primary)</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Upload 1 image; it will be marked as primary.
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      disabled={
+                        uploadingMain || uploadingMore || (!mainImage && remainingImages <= 0)
+                      }
+                      sx={{ whiteSpace: 'nowrap' }}
+                    >
+                      {uploadingMain ? 'Uploading…' : 'Upload'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={async (e: ChangeEvent<HTMLInputElement>) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingMain(true);
+                          try {
+                            const uploaded = await uploadsApi.uploadMainImage(file);
+                            setMainImage({ ...uploaded, isPrimary: true });
+                            enqueueSnackbar('Main image uploaded', { variant: 'success' });
+                          } catch (err) {
+                            enqueueSnackbar(getApiErrorMessage(err), { variant: 'error' });
+                          } finally {
+                            setUploadingMain(false);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                    </Button>
+                  </Stack>
+
+                  {mainImage ? (
+                    <Box sx={{ mt: 2 }}>
+                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <Box
+                          sx={{
+                            width: 110,
+                            height: 80,
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                          }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={mainImage.url}
+                            alt="Main"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </Box>
+                        <Button size="small" color="error" onClick={() => setMainImage(null)}>
+                          Remove main
+                        </Button>
+                      </Box>
+                    </Box>
+                  ) : null}
+                </Box>
+
+                <Box sx={{ border: '1px dashed', borderColor: 'divider', p: 2 }}>
+                  <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                    <ImageOutlinedIcon color="action" />
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography sx={{ fontWeight: 700 }}>Additional images</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Up to {remainingImages} more images (max {MAX_IMAGES}). Total media max:{' '}
+                        {MAX_TOTAL_MEDIA}.
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      disabled={uploadingMore || uploadingMain || remainingImages <= 0}
+                      sx={{ whiteSpace: 'nowrap' }}
+                    >
+                      {uploadingMore ? 'Uploading…' : `Upload images (up to ${remainingImages})`}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        hidden
+                        onChange={async (e: ChangeEvent<HTMLInputElement>) => {
+                          const files = Array.from(e.target.files ?? []);
+                          if (!files.length) return;
+
+                          const remaining = remainingImages;
+                          if (remaining <= 0) {
+                            enqueueSnackbar(
+                              `You can only attach up to ${MAX_IMAGES} images and ${MAX_VIDEOS} videos (total ${MAX_TOTAL_MEDIA}).`,
+                              {
+                                variant: 'warning',
+                              },
+                            );
+                            return;
+                          }
+
+                          const toUpload = files.slice(0, remaining);
+                          setUploadingMore(true);
+                          try {
+                            const uploaded = await uploadsApi.uploadImages(toUpload);
+                            setAdditionalImages((prev) => [
+                              ...prev,
+                              ...uploaded.map((u) => ({ ...u, isPrimary: false })),
+                            ]);
+                            enqueueSnackbar(`Uploaded ${uploaded.length} image(s)`, {
+                              variant: 'success',
+                            });
+                          } catch (err) {
+                            enqueueSnackbar(getApiErrorMessage(err), { variant: 'error' });
+                          } finally {
+                            setUploadingMore(false);
+                            e.target.value = '';
+                          }
+                        }}
+                      />
+                    </Button>
+                  </Stack>
+
+                  {additionalImages.length ? (
+                    <Box sx={{ mt: 2 }}>
+                      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                        {additionalImages.map((img) => (
+                          <Box
+                            key={img.publicId}
+                            sx={{
+                              width: 110,
+                              height: 80,
+                              borderRadius: 2,
+                              overflow: 'hidden',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                            }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={img.url}
+                              alt="Additional"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => setMainFromImage(img)}
+                            />
+                          </Box>
+                        ))}
+                      </Stack>
+
+                      <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                        {additionalImages.map((img) => (
+                          <Button
+                            key={`rm-${img.publicId}`}
+                            size="small"
+                            color="error"
+                            onClick={() =>
+                              setAdditionalImages((prev) =>
+                                prev.filter((p) => p.publicId !== img.publicId),
+                              )
+                            }
+                          >
+                            Remove
+                          </Button>
+                        ))}
+                      </Stack>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ mt: 1, display: 'block' }}
+                      >
+                        Click an additional thumbnail to make it the main image.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                      No additional images yet.
+                    </Typography>
+                  )}
+                </Box>
+              </Stack>
+
+              <Box sx={{ mt: 2, border: '1px dashed', borderColor: 'divider', p: 2 }}>
+                <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                  <VideocamOutlinedIcon color="action" />
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography sx={{ fontWeight: 700 }}>Additional videos</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Up to {remainingVideos} more videos (max {MAX_VIDEOS}). Total media max:{' '}
+                      {MAX_TOTAL_MEDIA}.
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    disabled={uploadingVideos || uploadingMain || remainingVideos <= 0}
+                    sx={{ whiteSpace: 'nowrap' }}
+                  >
+                    {uploadingVideos ? 'Uploading…' : `Upload videos (up to ${remainingVideos})`}
+                    <input
+                      type="file"
+                      accept="video/*"
+                      multiple
+                      hidden
+                      onChange={async (e: ChangeEvent<HTMLInputElement>) => {
+                        const files = Array.from(e.target.files ?? []);
+                        if (!files.length) return;
+
+                        const remaining = remainingVideos;
+                        if (remaining <= 0) {
+                          enqueueSnackbar(
+                            `You can only attach up to ${MAX_VIDEOS} videos (and up to ${MAX_IMAGES} images).`,
+                            {
+                              variant: 'warning',
+                            },
+                          );
+                          return;
+                        }
+
+                        const toUpload = files.slice(0, remaining);
+                        setUploadingVideos(true);
+                        try {
+                          const uploaded = await uploadsApi.uploadVideos(toUpload);
+                          setAdditionalVideos((prev) => [...prev, ...uploaded]);
+                          enqueueSnackbar(`Uploaded ${uploaded.length} video(s)`, {
+                            variant: 'success',
+                          });
+                        } catch (err) {
+                          enqueueSnackbar(getApiErrorMessage(err), { variant: 'error' });
+                        } finally {
+                          setUploadingVideos(false);
+                          e.target.value = '';
+                        }
+                      }}
+                    />
+                  </Button>
+                </Stack>
+
+                {additionalVideos.length ? (
+                  <Box sx={{ mt: 2 }}>
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                      {additionalVideos.map((vid) => (
+                        <Box
+                          key={vid.publicId}
+                          sx={{
+                            width: 110,
+                            height: 80,
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            backgroundColor: 'background.paper',
+                          }}
+                        >
+                          <video
+                            src={vid.url}
+                            muted
+                            preload="metadata"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        </Box>
+                      ))}
+                    </Stack>
+
+                    <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                      {additionalVideos.map((vid) => (
+                        <Button
+                          key={`rmv-${vid.publicId}`}
+                          size="small"
+                          color="error"
+                          onClick={() =>
+                            setAdditionalVideos((prev) =>
+                              prev.filter((p) => p.publicId !== vid.publicId),
+                            )
+                          }
+                        >
+                          Remove
+                        </Button>
+                      ))}
+                    </Stack>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    No additional videos yet.
+                  </Typography>
+                )}
+              </Box>
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+          <Button
+            variant="contained"
+            onClick={() => {
+              void saveMutation.mutate();
+            }}
+            disabled={saveMutation.isPending}
+          >
             Save
           </Button>
         </DialogActions>

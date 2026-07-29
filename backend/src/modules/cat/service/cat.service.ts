@@ -3,7 +3,7 @@ import { env } from '../../../config/env';
 import { AppError } from '../../../utils/AppError';
 import { buildPaginationMeta, parsePagination } from '../../../utils/pagination';
 import { ensureUniqueSlug, slugify } from '../../../utils/slug';
-import type { CatImage, SeoFields } from '../../../types/media';
+import type { CatImage, CatVideo, SeoFields } from '../../../types/media';
 import { activityLogService } from '../../activity-log/service/activity-log.service';
 import { breedRepository } from '../../breed/repository/breed.repository';
 import { categoryRepository } from '../../category/repository/category.repository';
@@ -27,6 +27,7 @@ export interface CatInput {
   stock?: number;
   status?: CatStatus;
   images?: CatImage[];
+  videos?: CatVideo[];
   attributes?: Record<string, string>;
   vaccinated?: boolean;
   neutered?: boolean;
@@ -56,10 +57,7 @@ export class CatService {
 
   async listAdmin(query: Record<string, unknown>) {
     const { page, limit, skip } = parsePagination(query.page, query.limit);
-    const status =
-      typeof query.status === 'string'
-        ? (query.status as CatStatus)
-        : undefined;
+    const status = typeof query.status === 'string' ? (query.status as CatStatus) : undefined;
 
     const { items, total } = await catRepository.list({
       q: typeof query.q === 'string' ? query.q : undefined,
@@ -98,6 +96,7 @@ export class CatService {
     const slug = await ensureUniqueSlug(baseSlug, (s) => catRepository.slugExists(s));
 
     const images = this.normalizeImages(dto.images);
+    const videos = this.normalizeVideos(dto.videos);
 
     const cat = await catRepository.create({
       name: dto.name.trim(),
@@ -116,6 +115,7 @@ export class CatService {
       stock: dto.stock ?? 1,
       status: dto.status ?? 'draft',
       images,
+      videos,
       attributes: dto.attributes,
       vaccinated: dto.vaccinated ?? false,
       neutered: dto.neutered ?? false,
@@ -141,7 +141,10 @@ export class CatService {
     if (!existing) throw AppError.notFound('Cat not found');
 
     if (dto.breed || dto.category) {
-      await this.assertRefs(dto.breed ?? String(existing.breed), dto.category ?? String(existing.category));
+      await this.assertRefs(
+        dto.breed ?? String(existing.breed),
+        dto.category ?? String(existing.category),
+      );
     }
 
     const update: Partial<ICat> = { updatedBy: new Types.ObjectId(actorId) };
@@ -161,6 +164,7 @@ export class CatService {
     if (dto.stock !== undefined) update.stock = dto.stock;
     if (dto.status !== undefined) update.status = dto.status;
     if (dto.images !== undefined) update.images = this.normalizeImages(dto.images);
+    if (dto.videos !== undefined) update.videos = this.normalizeVideos(dto.videos);
     if (dto.attributes !== undefined) update.attributes = dto.attributes;
     if (dto.vaccinated !== undefined) update.vaccinated = dto.vaccinated;
     if (dto.neutered !== undefined) update.neutered = dto.neutered;
@@ -235,6 +239,15 @@ export class CatService {
       normalized[0].isPrimary = true;
     }
     return normalized;
+  }
+
+  private normalizeVideos(videos?: CatVideo[]): CatVideo[] {
+    if (!videos?.length) return [];
+    return videos.map((v) => ({
+      url: v.url,
+      publicId: v.publicId,
+      alt: v.alt,
+    }));
   }
 }
 

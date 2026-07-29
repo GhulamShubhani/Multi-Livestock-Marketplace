@@ -1,7 +1,7 @@
 import multer from 'multer';
 import type { RequestHandler } from 'express';
 import { env } from '../../../config/env';
-import { ALLOWED_IMAGE_MIME_TYPES } from '../../../types/media';
+import { ALLOWED_IMAGE_MIME_TYPES, ALLOWED_VIDEO_MIME_TYPES } from '../../../types/media';
 import { AppError } from '../../../utils/AppError';
 
 const storage = multer.memoryStorage();
@@ -12,6 +12,14 @@ const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
     return;
   }
   cb(AppError.badRequest('Only JPEG, PNG, and WebP images are allowed'));
+};
+
+const videoFileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
+  if ((ALLOWED_VIDEO_MIME_TYPES as readonly string[]).includes(file.mimetype)) {
+    cb(null, true);
+    return;
+  }
+  cb(AppError.badRequest('Only MP4, WebM, and MOV videos are allowed'));
 };
 
 export const uploadSingleImage = multer({
@@ -28,6 +36,21 @@ export const uploadMultipleImages = multer({
   },
   fileFilter,
 }).array('images', env.UPLOAD_MAX_FILES);
+
+export const uploadSingleVideo = multer({
+  storage,
+  limits: { fileSize: env.UPLOAD_MAX_FILE_SIZE_MB * 1024 * 1024, files: 1 },
+  fileFilter: videoFileFilter,
+}).single('video');
+
+export const uploadMultipleVideos = multer({
+  storage,
+  limits: {
+    fileSize: env.UPLOAD_MAX_FILE_SIZE_MB * 1024 * 1024,
+    files: env.UPLOAD_MAX_FILES,
+  },
+  fileFilter: videoFileFilter,
+}).array('videos', env.UPLOAD_MAX_FILES);
 
 export function handleMulterError(middleware: RequestHandler): RequestHandler {
   return (req, res, next) => {

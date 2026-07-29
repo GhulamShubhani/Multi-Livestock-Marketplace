@@ -8,6 +8,10 @@ export interface CatImage extends MediaAsset {
   alt?: string;
 }
 
+export interface CatVideo extends MediaAsset {
+  alt?: string;
+}
+
 export interface SeoFields {
   title?: string;
   description?: string;
@@ -27,22 +31,17 @@ export function detectImageMime(buffer: Buffer): AllowedImageMime | null {
   }
 
   // PNG
-  if (
-    buffer[0] === 0x89 &&
-    buffer[1] === 0x50 &&
-    buffer[2] === 0x4e &&
-    buffer[3] === 0x47
-  ) {
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) {
     return 'image/png';
   }
 
   // WEBP: RIFF....WEBP
-  if (
-    buffer.toString('ascii', 0, 4) === 'RIFF' &&
-    buffer.toString('ascii', 8, 12) === 'WEBP'
-  ) {
+  if (buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP') {
     return 'image/webp';
   }
 
   return null;
 }
+
+export const ALLOWED_VIDEO_MIME_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'] as const;
+export type AllowedVideoMime = (typeof ALLOWED_VIDEO_MIME_TYPES)[number];

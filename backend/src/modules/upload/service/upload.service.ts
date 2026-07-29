@@ -41,6 +41,40 @@ export class UploadService {
     return uploads;
   }
 
+  async uploadVideo(file: Express.Multer.File, folder?: string): Promise<MediaAsset> {
+    this.assertValidVideo(file);
+
+    const targetFolder = folder || env.CLOUDINARY_FOLDER;
+
+    if (!isCloudinaryConfigured) {
+      const publicId = `dev/${targetFolder}/${randomUUID()}`;
+      const asset: MediaAsset = {
+        publicId,
+        url: `https://res.cloudinary.com/demo/video/upload/${publicId}.mp4`,
+      };
+      logger.info('Mock video upload (Cloudinary not configured)', { publicId });
+      return asset;
+    }
+
+    try {
+      const result = await this.uploadBufferVideo(file.buffer, targetFolder, file.mimetype);
+      return {
+        url: result.secure_url,
+        publicId: result.public_id,
+      };
+    } catch (error) {
+      logger.error('Cloudinary video upload failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw AppError.badRequest('Video upload failed');
+    }
+  }
+
+  async uploadVideos(files: Express.Multer.File[], folder?: string): Promise<MediaAsset[]> {
+    const uploads = await Promise.all(files.map((file) => this.uploadVideo(file, folder)));
+    return uploads;
+  }
+
   async deleteImage(publicId: string): Promise<void> {
     if (!publicId) {
       throw AppError.badRequest('publicId is required');
@@ -77,17 +111,56 @@ export class UploadService {
     }
   }
 
-  private uploadBuffer(
-    buffer: Buffer,
-    folder: string,
-    mime: string,
-  ): Promise<UploadApiResponse> {
+  private assertValidVideo(file: Express.Multer.File): void {
+    if (!file?.buffer?.length) {
+      throw AppError.badRequest('Empty file');
+    }
+    if (!file.mimetype) {
+      throw AppError.badRequest('Missing video mimetype');
+    }
+  }
+
+  private uploadBuffer(buffer: Buffer, folder: string, mime: string): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder,
           resource_type: 'image',
           format: mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg',
+          transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+        },
+        (error, result) => {
+          if (error || !result) {
+            reject(error ?? new Error('Empty Cloudinary response'));
+            return;
+          }
+          resolve(result);
+        },
+      );
+      stream.end(buffer);
+    });
+  }
+
+  private uploadBufferVideo(
+    buffer: Buffer,
+    folder: string,
+    mime: string,
+  ): Promise<UploadApiResponse> {
+    return new Promise((resolve, reject) => {
+      const format =
+        mime === 'video/webm'
+          ? 'webm'
+          : mime === 'video/quicktime'
+            ? 'mov'
+            : mime === 'video/mp4'
+              ? 'mp4'
+              : 'mp4';
+
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: 'video',
+          format,
           transformation: [{ quality: 'auto', fetch_format: 'auto' }],
         },
         (error, result) => {

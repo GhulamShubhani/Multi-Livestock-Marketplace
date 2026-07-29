@@ -78,13 +78,16 @@ export const createCatValidators = [
   body('currency').optional().isLength({ min: 3, max: 3 }),
   body('stock').optional().isInt({ min: 0 }).toInt(),
   body('status').optional().isIn(['draft', 'available', 'reserved', 'sold', 'archived']),
-  body('images').optional().isArray({ max: 20 }),
-  body('images.*.url').optional().isURL(),
+  body('images').optional().isArray({ max: 5 }),
+  body('images.*.url').optional().isString().notEmpty(),
   body('images.*.publicId').optional().isString().notEmpty(),
   body('vaccinated').optional().isBoolean().toBoolean(),
   body('neutered').optional().isBoolean().toBoolean(),
   body('pedigree').optional().isBoolean().toBoolean(),
   body('featured').optional().isBoolean().toBoolean(),
+  body('videos').optional().isArray({ max: 5 }),
+  body('videos.*.url').optional().isString().notEmpty(),
+  body('videos.*.publicId').optional().isString().notEmpty(),
 ];
 
 export const updateCatValidators = [
@@ -98,6 +101,12 @@ export const updateCatValidators = [
   body('stock').optional().isInt({ min: 0 }).toInt(),
   body('status').optional().isIn(['draft', 'available', 'reserved', 'sold', 'archived']),
   body('featured').optional().isBoolean().toBoolean(),
+  body('images').optional().isArray({ max: 5 }),
+  body('images.*.url').optional().isString().notEmpty(),
+  body('images.*.publicId').optional().isString().notEmpty(),
+  body('videos').optional().isArray({ max: 5 }),
+  body('videos.*.url').optional().isString().notEmpty(),
+  body('videos.*.publicId').optional().isString().notEmpty(),
 ];
 
 export const updateCatStatusValidators = [

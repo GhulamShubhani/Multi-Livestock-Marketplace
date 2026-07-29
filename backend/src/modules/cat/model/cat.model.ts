@@ -11,6 +11,15 @@ const catImageSchema = new Schema(
   { _id: false },
 );
 
+const catVideoSchema = new Schema(
+  {
+    url: { type: String, required: true },
+    publicId: { type: String, required: true },
+    alt: { type: String },
+  },
+  { _id: false },
+);
+
 const catSchema = new Schema<ICat>(
   {
     name: { type: String, required: true, trim: true },
@@ -34,6 +43,7 @@ const catSchema = new Schema<ICat>(
       index: true,
     },
     images: { type: [catImageSchema], default: [] },
+    videos: { type: [catVideoSchema], default: [] },
     attributes: { type: Map, of: String },
     vaccinated: { type: Boolean, default: false },
     neutered: { type: Boolean, default: false },

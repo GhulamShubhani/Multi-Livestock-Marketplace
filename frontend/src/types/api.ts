@@ -46,6 +46,12 @@ export type MediaImage = {
   alt?: string;
 };
 
+export type MediaVideo = {
+  url: string;
+  publicId?: string;
+  alt?: string;
+};
+
 export type NamedRef = {
   _id: string;
   name: string;
@@ -71,6 +77,7 @@ export type Cat = {
   stock: number;
   status: string;
   images: MediaImage[];
+  videos?: MediaVideo[];
   vaccinated: boolean;
   neutered: boolean;
   pedigree: boolean;

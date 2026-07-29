@@ -15,7 +15,17 @@ export type CatAdmin = {
   stock: number;
   status: string;
   featured: boolean;
-  images?: Array<{ url: string; publicId?: string }>;
+  images?: Array<{
+    url: string;
+    publicId: string;
+    isPrimary?: boolean;
+    alt?: string;
+  }>;
+  videos?: Array<{
+    url: string;
+    publicId: string;
+    alt?: string;
+  }>;
   vaccinated?: boolean;
   neutered?: boolean;
   pedigree?: boolean;
@@ -40,7 +50,8 @@ export type BreedAdmin = {
 };
 
 export const catalogApi = {
-  listCats: (params?: Record<string, unknown>) => apiGet<{ cats: CatAdmin[] }>('/cats/admin', params),
+  listCats: (params?: Record<string, unknown>) =>
+    apiGet<{ cats: CatAdmin[] }>('/cats/admin', params),
   getCat: (id: string) => apiGet<{ cat: CatAdmin }>(`/cats/admin/${id}`),
   createCat: (body: Record<string, unknown>) => apiMutate<{ cat: CatAdmin }>('post', '/cats', body),
   updateCat: (id: string, body: Record<string, unknown>) =>
