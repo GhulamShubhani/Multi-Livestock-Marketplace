@@ -18,7 +18,8 @@ const HERO_SLIDES = [
     alt: 'An orange tabby looking toward the camera',
   },
   {
-    src: 'https://images.unsplash.com/photo-1495366695019-aa49f68b0ae1?auto=format&fit=crop&w=2400&q=80',
+    // Replaced removed Unsplash asset photo-1495366695019-aa49f68b0ae1
+    src: 'https://images.unsplash.com/photo-1543852786-1cf6624b9987?auto=format&fit=crop&w=2400&q=80',
     alt: 'A soft grey cat nestled in warm light',
   },
 ] as const;
@@ -60,6 +61,7 @@ export function HomeHero() {
               component="img"
               src={HERO_SLIDES[index].src}
               alt={HERO_SLIDES[index].alt}
+              onError={() => setIndex((i) => (i + 1) % HERO_SLIDES.length)}
               sx={{
                 width: '100%',
                 height: '100%',
