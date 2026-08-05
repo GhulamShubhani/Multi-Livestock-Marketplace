@@ -1,5 +1,5 @@
 import { logger } from '../config/logger';
-import { env, isDevelopment } from '../config/env';
+import { isDevelopment, primaryFrontendUrl } from '../config/env';
 
 /**
  * Dev-friendly email service. Replace with Nodemailer/SendGrid in a later phase.
@@ -7,7 +7,7 @@ import { env, isDevelopment } from '../config/env';
  */
 export class EmailService {
   async sendEmailVerification(to: string, token: string): Promise<void> {
-    const link = `${env.FRONTEND_URL}/auth/verify-email?token=${token}`;
+    const link = `${primaryFrontendUrl}/auth/verify-email?token=${token}`;
     if (isDevelopment) {
       logger.info('Email verification link (dev)', { to, link });
       return;
@@ -16,7 +16,7 @@ export class EmailService {
   }
 
   async sendPasswordReset(to: string, token: string): Promise<void> {
-    const link = `${env.FRONTEND_URL}/auth/reset-password?token=${token}`;
+    const link = `${primaryFrontendUrl}/auth/reset-password?token=${token}`;
     if (isDevelopment) {
       logger.info('Password reset link (dev)', { to, link });
       return;

@@ -1,5 +1,29 @@
 export const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'Cat Marketplace Admin';
-export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api/v1';
+
+const API_LOCAL = import.meta.env.VITE_API_LOCAL_URL ?? 'http://localhost:5000/api/v1';
+const API_REMOTE =
+  import.meta.env.VITE_API_REMOTE_URL ??
+  import.meta.env.VITE_API_DEV_URL ??
+  'https://cat-shop-backend.vercel.app/api/v1';
+
+/**
+ * Resolve API base URL.
+ * - Explicit VITE_API_URL wins (use this on Vercel admin deploy)
+ * - Local: VITE_API_MODE=local|remote (default local)
+ */
+function resolveApiUrl(): string {
+  const explicit = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+  if (explicit) return explicit.replace(/\/$/, '');
+
+  const mode = String(import.meta.env.VITE_API_MODE ?? 'local').toLowerCase();
+  const url = mode === 'remote' ? API_REMOTE : API_LOCAL;
+  return url.replace(/\/$/, '');
+}
+
+export const API_URL = resolveApiUrl();
+export const API_MODE = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
+  ? 'explicit'
+  : String(import.meta.env.VITE_API_MODE ?? 'local').toLowerCase();
 
 export const STAFF_ROLES = new Set(['super_admin', 'admin', 'manager', 'staff']);
 

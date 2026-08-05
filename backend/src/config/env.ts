@@ -16,6 +16,18 @@ for (const candidate of candidates) {
   }
 }
 
+/** One URL or comma-separated list (local + production origins). */
+const originListSchema = z
+  .string()
+  .min(1)
+  .transform((value) =>
+    value
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean),
+  )
+  .pipe(z.array(z.string().url()).min(1));
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(5000),
@@ -23,8 +35,8 @@ const envSchema = z.object({
 
   MONGODB_URI: z.string().min(1, 'MONGODB_URI is required'),
 
-  FRONTEND_URL: z.string().url(),
-  ADMIN_URL: z.string().url(),
+  FRONTEND_URL: originListSchema,
+  ADMIN_URL: originListSchema,
 
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be at least 32 characters'),
@@ -93,4 +105,15 @@ export const env = parsed.data;
 export const isProduction = env.NODE_ENV === 'production';
 export const isDevelopment = env.NODE_ENV === 'development';
 
-export const corsOrigins = [env.FRONTEND_URL, env.ADMIN_URL];
+/** All allowed browser origins (local + deployed). */
+export const corsOrigins = [...env.FRONTEND_URL, ...env.ADMIN_URL];
+
+function pickPrimaryOrigin(origins: string[]): string {
+  return origins.find((origin) => origin.startsWith('https://')) ?? origins[0];
+}
+
+/** Primary storefront URL for emails / Stripe redirects (prefers https). */
+export const primaryFrontendUrl = pickPrimaryOrigin(env.FRONTEND_URL);
+
+/** Primary admin URL (prefers https). */
+export const primaryAdminUrl = pickPrimaryOrigin(env.ADMIN_URL);

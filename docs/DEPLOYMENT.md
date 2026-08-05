@@ -2,12 +2,12 @@
 
 Target topology (from architecture):
 
-| App         | Host                      | Notes              |
-| ----------- | ------------------------- | ------------------ |
-| `frontend/` | **Vercel**                | Next.js App Router |
-| `admin/`    | **Vercel**                | Vite static SPA    |
-| `backend/`  | **Railway** or **Render** | Express API        |
-| MongoDB     | **MongoDB Atlas**         | Managed cluster    |
+| App         | Host                           | Notes              |
+| ----------- | ------------------------------ | ------------------ |
+| `frontend/` | **Vercel**                     | Next.js App Router |
+| `admin/`    | **Vercel**                     | Vite static SPA    |
+| `backend/`  | **Vercel**, Railway, or Render | Express API        |
+| MongoDB     | **MongoDB Atlas**              | Managed cluster    |
 
 Local Docker compose covers Mongo + API (and optional frontend/admin). Prefer managed hosts for production.
 
@@ -21,7 +21,7 @@ Local Docker compose covers Mongo + API (and optional frontend/admin). Prefer ma
 
 ---
 
-## 2. Backend (Railway or Render)
+## 2. Backend (Railway, Render, or Vercel)
 
 ### Environment
 
@@ -32,8 +32,8 @@ NODE_ENV=production
 PORT=5000
 API_PREFIX=/api/v1
 MONGODB_URI=mongodb+srv://...
-FRONTEND_URL=https://your-storefront.vercel.app
-ADMIN_URL=https://your-admin.vercel.app
+FRONTEND_URL=http://localhost:3005,https://your-storefront.vercel.app
+ADMIN_URL=http://localhost:5173,https://your-admin.vercel.app
 JWT_ACCESS_SECRET=<32+ chars>
 JWT_REFRESH_SECRET=<32+ chars>
 COOKIE_SECURE=true
@@ -42,7 +42,16 @@ COOKIE_DOMAIN=.yourdomain.com   # optional; needed for shared parent domain
 SEED_ON_BOOT=false              # run seed once manually
 ```
 
+`FRONTEND_URL` / `ADMIN_URL` accept **comma-separated** origins so local and production browsers both pass CORS.
+
 Also configure Cloudinary + Stripe when leaving mock mode.
+
+### Vercel (API)
+
+1. New project → Root Directory = `backend`.
+2. Framework preset: Other. `vercel.json` routes all traffic to `api/index.ts`.
+3. Set the env vars above. For localhost clients calling this API you **must** use `COOKIE_SECURE=true` and `COOKIE_SAME_SITE=none`.
+4. Health check: `https://your-api.vercel.app/api/v1/health`
 
 ### Railway
 
@@ -84,10 +93,21 @@ Update Stripe webhook endpoint to `https://api.../api/v1/payments/webhook` and s
 4. Environment:
 
 ```text
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
+# Deployed storefront — pin the API explicitly
+NEXT_PUBLIC_API_URL=https://cat-shop-backend.vercel.app/api/v1
 NEXT_PUBLIC_APP_URL=https://shop.yourdomain.com
 NEXT_PUBLIC_APP_NAME=Cat Marketplace
 ```
+
+For local dev, prefer mode switching instead of `NEXT_PUBLIC_API_URL`:
+
+```text
+NEXT_PUBLIC_API_MODE=local
+NEXT_PUBLIC_API_LOCAL_URL=http://localhost:5000/api/v1
+NEXT_PUBLIC_API_REMOTE_URL=https://cat-shop-backend.vercel.app/api/v1
+```
+
+Set `NEXT_PUBLIC_API_MODE=remote` to hit the Vercel API from your local Next app.
 
 4. Install command (monorepo): `npm install --prefix ..` can be flaky; prefer:
 
@@ -121,8 +141,17 @@ Output: frontend/.next
 3. Environment:
 
 ```text
-VITE_API_URL=https://api.yourdomain.com/api/v1
+# Deployed admin — pin the API explicitly
+VITE_API_URL=https://cat-shop-backend.vercel.app/api/v1
 VITE_APP_NAME=Cat Marketplace Admin
+```
+
+Local switching:
+
+```text
+VITE_API_MODE=local
+VITE_API_LOCAL_URL=http://localhost:5000/api/v1
+VITE_API_REMOTE_URL=https://cat-shop-backend.vercel.app/api/v1
 ```
 
 4. Build:

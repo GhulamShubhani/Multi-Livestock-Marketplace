@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { env, isDevelopment } from '../../../config/env';
+import { env, isDevelopment, primaryFrontendUrl } from '../../../config/env';
 import { isStripeConfigured, stripe } from '../../../config/stripe';
 import { logger } from '../../../config/logger';
 import { AppError } from '../../../utils/AppError';
@@ -37,14 +37,15 @@ export class PaymentService {
       return {
         mock: true,
         sessionId: mockSessionId,
-        url: `${env.FRONTEND_URL}/checkout/success?session_id=${mockSessionId}&mock=1`,
+        url: `${primaryFrontendUrl}/checkout/success?session_id=${mockSessionId}&mock=1`,
         paymentId: String(payment._id),
       };
     }
 
     const successUrl =
-      env.STRIPE_SUCCESS_URL ?? `${env.FRONTEND_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = env.STRIPE_CANCEL_URL ?? `${env.FRONTEND_URL}/checkout/cancel`;
+      env.STRIPE_SUCCESS_URL ??
+      `${primaryFrontendUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = env.STRIPE_CANCEL_URL ?? `${primaryFrontendUrl}/checkout/cancel`;
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -64,7 +65,10 @@ export class PaymentService {
             unit_amount: order.total,
             product_data: {
               name: `Order ${order.orderNumber}`,
-              description: order.items.map((i) => i.name).join(', ').slice(0, 400),
+              description: order.items
+                .map((i) => i.name)
+                .join(', ')
+                .slice(0, 400),
             },
           },
         },
@@ -231,11 +235,21 @@ export class PaymentService {
 
     let stripeRefundId: string | undefined;
 
-    if (isStripeConfigured && stripe && payment.stripePaymentIntentId && !payment.stripePaymentIntentId.startsWith('mock_')) {
+    if (
+      isStripeConfigured &&
+      stripe &&
+      payment.stripePaymentIntentId &&
+      !payment.stripePaymentIntentId.startsWith('mock_')
+    ) {
       const refund = await stripe.refunds.create({
         payment_intent: payment.stripePaymentIntentId,
         amount: refundAmount,
-        reason: reason === 'fraudulent' ? 'fraudulent' : reason === 'duplicate' ? 'duplicate' : 'requested_by_customer',
+        reason:
+          reason === 'fraudulent'
+            ? 'fraudulent'
+            : reason === 'duplicate'
+              ? 'duplicate'
+              : 'requested_by_customer',
       });
       stripeRefundId = refund.id;
     }
