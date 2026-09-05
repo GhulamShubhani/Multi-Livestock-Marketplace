@@ -15,7 +15,7 @@ export interface ICoupon {
   endsAt?: Date;
   isActive: boolean;
   applicableCategories?: Types.ObjectId[];
-  applicableCats?: Types.ObjectId[];
+  applicableListings?: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }

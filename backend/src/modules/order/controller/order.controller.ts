@@ -57,7 +57,7 @@ export const orderController = new OrderController();
 
 export const createOrderValidators = [
   body('items').isArray({ min: 1 }),
-  body('items.*.catId').isMongoId(),
+  body('items.*.listingId').isMongoId(),
   body('items.*.quantity').isInt({ min: 1, max: 10 }).toInt(),
   body('couponCode').optional().isString().isLength({ max: 40 }),
   body('notes').optional().isString().isLength({ max: 500 }),
@@ -71,5 +71,13 @@ export const listOrderValidators = [
 ];
 export const updateOrderStatusValidators = [
   ...orderIdParam,
-  body('status').isIn(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']),
+  body('status').isIn([
+    'pending',
+    'paid',
+    'processing',
+    'shipped',
+    'delivered',
+    'cancelled',
+    'refunded',
+  ]),
 ];

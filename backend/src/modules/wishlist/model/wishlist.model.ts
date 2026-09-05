@@ -6,7 +6,7 @@ const wishlistSchema = new Schema<IWishlist>(
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     items: [
       {
-        cat: { type: Schema.Types.ObjectId, ref: 'Cat', required: true },
+        listing: { type: Schema.Types.ObjectId, ref: 'Listing', required: true },
         addedAt: { type: Date, default: Date.now },
       },
     ],

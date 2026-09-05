@@ -1,7 +1,7 @@
 import type { Document, Types } from 'mongoose';
 
 export interface IWishlistItem {
-  cat: Types.ObjectId;
+  listing: Types.ObjectId;
   addedAt: Date;
 }
 

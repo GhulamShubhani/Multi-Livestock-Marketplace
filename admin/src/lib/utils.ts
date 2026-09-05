@@ -1,4 +1,4 @@
-export const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'Cat Marketplace Admin';
+export const APP_NAME = import.meta.env.VITE_APP_NAME ?? 'Multi-Livestock Marketplace CRM';
 
 const API_LOCAL = import.meta.env.VITE_API_LOCAL_URL ?? 'http://localhost:5000/api/v1';
 const API_REMOTE =
@@ -39,8 +39,11 @@ export function hasAnyPermission(userPermissions: string[] | undefined, required
   return hasPermission(userPermissions, required);
 }
 
-export function formatMoney(cents: number, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(cents / 100);
+export function formatMoney(cents: number, currency = 'INR') {
+  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
+    style: 'currency',
+    currency,
+  }).format(cents / 100);
 }
 
 export function formatDate(value?: string | Date | null) {

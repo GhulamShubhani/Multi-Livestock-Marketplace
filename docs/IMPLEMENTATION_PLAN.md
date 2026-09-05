@@ -1,124 +1,110 @@
 # Implementation Plan
 
-Work proceeds **one module/phase at a time**. After each phase, wait for your confirmation.
+Phases 0–11 delivered the original Cat Marketplace foundation. This plan records that history and the **Multi-Livestock Marketplace** upgrade that replaced species-specific catalogs and Stripe with a dynamic listing model and manual payments.
+
+Work historically proceeded one module/phase at a time.
 
 ---
 
 ## Phase 0 — Architecture & scaffold
 
 - [x] Architecture documentation
-- [x] Folder structure created
-- [x] Root `package.json`, `.gitignore`, `README.md`
+- [x] Folder structure / root tooling
 - [x] Design approved
 
 ---
 
 ## Phase 1 — Backend foundation
 
-- [x] Complete (verified)
+- [x] Config, DB, errors, logger, response helpers, security middlewares
 
 ---
 
 ## Phase 2 — Auth + RBAC
 
-- [x] Complete (verified)
+- [x] JWT cookies, CSRF, OTP, refresh rotation, roles/permissions
 
 ---
 
 ## Phase 3 — Users & profile
 
-- [x] Complete (verified)
+- [x] Admin users, profile, addresses, sessions
 
 ---
 
 ## Phase 4 — Catalog & uploads
 
-- [x] Complete (verified)
+- [x] Originally: categories, breeds, cats, Cloudinary uploads
+- [x] **Upgraded:** categories, breeds, **attributes**, **listings** (dynamic), uploads
 
 ---
 
 ## Phase 5 — Commerce
 
-- [x] Complete (verified)
+- [x] Wishlist, coupons, orders, reviews
+- [x] **Upgraded:** payments = UPI/QR/bank/COD/mobile proof + admin verify (**Stripe removed**)
 
 ---
 
-## Phase 6 — Ops modules (CURRENT)
+## Phase 6 — Ops modules
 
-- [x] Notifications, CMS, Banners, Settings
-- [x] Activity logs list API
-- [x] Dashboard/analytics endpoints
-
-**Exit criteria:** ✅ Ops APIs live; dashboard cards/sales/inventory; RBAC on admin routes.
+- [x] Notifications, CMS, banners, settings, activity logs, dashboard
+- [x] **Upgraded:** homepage CMS sections; `payment` settings key; sellers & enquiries modules
 
 ---
 
 ## Phase 7 — Frontend foundation
 
-- [x] Next.js 15 scaffold + Tailwind v4 + MUI + App Router
-- [x] Axios API client + React Query + Zustand (cart/wishlist/ui)
-- [x] Theme (forest + amber), dark mode, layout shell, SEO defaults
-- [x] Landing hero + placeholder About / Contact / Cats routes
-
-**Exit criteria:** ✅ Storefront foundation builds; providers and brand shell ready for feature wiring.
+- [x] Next.js 15 + Tailwind + MUI + App Router + API client + stores
 
 ---
 
-## Phase 8 — Frontend features (sub-steps)
+## Phase 8 — Frontend features
 
-- [x] Landing polish (featured cats) + About / Contact
-- [x] Catalog list + filters + cat detail + reviews
-- [x] Auth (login / register / forgot / reset / verify) + session bootstrap
-- [x] Wishlist (local + API sync) + cart
-- [x] Checkout (order + mock payment) + profile / orders
-
-**Exit criteria:** ✅ Customer storefront flows wired to `/api/v1`.
-
-Awaiting confirmation to start **Phase 9 — Admin foundation**.
+- [x] Multi-livestock homepage, category browse (`/animals`, shortcuts), listing detail
+- [x] Auth, wishlist, cart, checkout with **payment proof submit**
+- [x] Profile / orders, search, sell CTA
 
 ---
 
 ## Phase 9 — Admin foundation
 
-- [x] Vite React + MUI dashboard shell
-- [x] Auth / guest guards + staff role check
-- [x] Sidebar filtered by permissions
-- [x] Login + dashboard + module placeholders
-
-**Exit criteria:** ✅ Admin CRM foundation builds on port 5173.
+- [x] Vite React + MUI shell, auth guards, permission-filtered nav
 
 ---
 
-## Phase 10 — Admin modules (sub-steps)
+## Phase 10 — Admin modules
 
-- [x] Dashboard overview + Reports (sales/inventory)
-- [x] Users (+ roles info page; roles CRUD API not mounted)
-- [x] Catalog: cats, categories, breeds
-- [x] Commerce: orders, payments, coupons, reviews
-- [x] Content: CMS, banners, notifications
-- [x] System: settings, activity logs
-
-**Exit criteria:** ✅ Admin modules wired to `/api/v1` with permission gates.
+- [x] Dashboard, reports, users
+- [x] Catalog: **listings**, categories, **attributes**, breeds
+- [x] Commerce: orders, **payment verification**, coupons, reviews
+- [x] Content: CMS, banners, **homepage**, notifications
+- [x] Enquiries; system: settings, activity logs, roles info
 
 ---
 
 ## Phase 11 — Tooling & deploy
 
-- [x] Docker compose + Dockerfiles (API, frontend, admin)
+- [x] Docker compose + Dockerfiles
 - [x] Husky + lint-staged + Prettier
-- [x] GitHub Actions CI (lint + builds)
-- [x] Deploy docs (Vercel + Railway/Render) + runbook
-
-**Exit criteria:** ✅ Tooling and deploy documentation complete.
-
-**All planned phases (0–11) complete.**
+- [x] CI + deploy docs (Vercel + Railway/Render)
 
 ---
 
-## How to confirm
+## Multi-Livestock upgrade checklist
 
-Reply with one of:
+- [x] Remove Stripe from product architecture (env, payments API, docs)
+- [x] Replace cat-only schema with Category → Attribute → Listing
+- [x] Add sellers, enquiries, homepage sections
+- [x] Permissions for listings/attributes/enquiries/sellers/homepage/payments:verify
+- [x] Roles: seller, buyer (+ legacy customer)
+- [x] Default currency INR; Cloudinary folder `livestock-marketplace`
+- [x] Documentation rewrite (this docs set)
 
-- `Approve Phase 0` — finalize root files if needed, then start **Phase 1**
-- `Revise: …` — request design changes
-- `Skip to Phase N` — only if you explicitly want to jump ahead
+---
+
+## Status
+
+**Platform is production-capable** for Multi-Livestock Marketplace ops. Further work is iterative feature enhancement, not greenfield phases.
+
+See [RUNBOOK.md](./RUNBOOK.md) and [DEPLOYMENT.md](./DEPLOYMENT.md) for day-to-day and release operations.

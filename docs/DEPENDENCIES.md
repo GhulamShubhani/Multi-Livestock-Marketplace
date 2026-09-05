@@ -1,18 +1,16 @@
 # Dependency List
 
-Versions are indicative; pin exact versions at install time.
+Versions are indicative; pin exact versions at install time. Workspace package scope remains `@cat-marketplace/*` (legacy npm names); the product is **Multi-Livestock Marketplace**.
 
 ## Root (workspaces)
 
-| Package | Purpose |
-|---------|---------|
-| `typescript` | Shared TS tooling |
-| `prettier` | Formatting |
-| `husky` | Git hooks |
-| `lint-staged` | Pre-commit lint |
-| `concurrently` | Run apps in parallel (dev) |
+| Package       | Purpose           |
+| ------------- | ----------------- |
+| `prettier`    | Formatting        |
+| `husky`       | Git hooks         |
+| `lint-staged` | Pre-commit format |
 
-Package manager: **pnpm** (recommended) or npm workspaces.
+Package manager: **npm workspaces** (Node ≥ 20).
 
 ---
 
@@ -20,103 +18,92 @@ Package manager: **pnpm** (recommended) or npm workspaces.
 
 ### Core
 
-| Package | Purpose |
-|---------|---------|
-| `express` | HTTP framework |
-| `mongoose` | MongoDB ODM |
-| `dotenv` / `zod` | Env validation |
-| `cors` | CORS |
-| `helmet` | Security headers |
-| `compression` | Response compression |
-| `cookie-parser` | Cookie parsing |
-| `morgan` | HTTP access logs |
-| `winston` | Structured logging |
-| `express-rate-limit` | Rate limiting |
-| `express-mongo-sanitize` | NoSQL injection prevention |
-| `hpp` | HTTP parameter pollution |
-| `xss-clean` or `sanitize-html` | XSS sanitisation |
-| `csurf` / custom double-submit | CSRF (cookie-based SPA strategy) |
-| `bcryptjs` | Password hashing |
-| `jsonwebtoken` | JWT access/refresh |
-| `express-validator` | Input validation |
-| `multer` | Multipart uploads |
-| `cloudinary` | Image CDN |
-| `stripe` | Payments |
-| `nodemailer` | Transactional email |
-| `uuid` / `nanoid` | IDs / request IDs |
-| `dayjs` | Dates |
-| `lodash` (sparingly) | Utilities |
+| Package                  | Purpose                            |
+| ------------------------ | ---------------------------------- |
+| `express`                | HTTP framework                     |
+| `mongoose`               | MongoDB ODM                        |
+| `dotenv` + `zod`         | Env loading & validation           |
+| `cors`                   | CORS allowlist                     |
+| `helmet`                 | Security headers                   |
+| `compression`            | Response compression               |
+| `cookie-parser`          | Cookie parsing                     |
+| `winston`                | Structured logging                 |
+| `express-rate-limit`     | Rate limiting                      |
+| `express-mongo-sanitize` | NoSQL injection prevention         |
+| `hpp`                    | HTTP parameter pollution           |
+| `bcryptjs`               | Password hashing                   |
+| `jsonwebtoken`           | JWT access tokens                  |
+| `express-validator`      | Input validation                   |
+| `multer`                 | Multipart uploads                  |
+| `cloudinary`             | Image CDN                          |
+| `@vercel/node`           | Optional Vercel serverless adapter |
+
+**Not used:** `stripe` / `@stripe/*` — payments are manual UPI proof + admin verify.
 
 ### Dev
 
-| Package | Purpose |
-|---------|---------|
-| `typescript` | Types |
-| `ts-node-dev` / `tsx` | Dev runner |
-| `@types/express`, `@types/node`, … | Types |
-| `eslint` + `@typescript-eslint/*` | Lint |
-| `prettier` | Format |
-| `jest` / `vitest` + `supertest` | Tests (later) |
+| Package            | Purpose               |
+| ------------------ | --------------------- |
+| `typescript`       | Types                 |
+| `tsx`              | Dev runner / seed CLI |
+| `@types/*`         | Type packages         |
+| ESLint (workspace) | Lint                  |
 
 ---
 
 ## Frontend (`frontend/`)
 
-| Package | Purpose |
-|---------|---------|
-| `next` (15) | Framework |
-| `react`, `react-dom` | UI |
-| `typescript` | Types |
-| `tailwindcss`, `postcss`, `autoprefixer` | Styling |
-| `@mui/material`, `@mui/icons-material`, `@emotion/*` | Components |
-| `@tanstack/react-query` | Server state |
-| `axios` | HTTP |
-| `zustand` | Client state |
-| `react-hook-form` | Forms |
-| `zod` + `@hookform/resolvers` | Validation |
-| `framer-motion` | Motion |
-| `@stripe/stripe-js`, `@stripe/react-stripe-js` | Payments UI |
-| `next-themes` | Dark mode |
-| `clsx` / `tailwind-merge` | Class utils |
+| Package                                              | Purpose                       |
+| ---------------------------------------------------- | ----------------------------- |
+| `next` (15)                                          | Framework                     |
+| `react`, `react-dom`                                 | UI                            |
+| `typescript`                                         | Types                         |
+| `tailwindcss`                                        | Styling                       |
+| `@mui/material`, `@mui/icons-material`, `@emotion/*` | Components                    |
+| `@tanstack/react-query`                              | Server state                  |
+| `axios`                                              | HTTP (+ credentials / CSRF)   |
+| `zustand`                                            | Client state (cart, wishlist) |
+| `react-hook-form` + `zod`                            | Forms (where used)            |
+| `framer-motion`                                      | Motion                        |
+| `next-themes`                                        | Dark mode                     |
+| `clsx` / `tailwind-merge`                            | Class utils                   |
+
+**Not used:** `@stripe/stripe-js`, `@stripe/react-stripe-js`.
 
 ---
 
 ## Admin (`admin/`)
 
-| Package | Purpose |
-|---------|---------|
-| `vite` | Bundler |
-| `react`, `react-dom` | UI |
-| `typescript` | Types |
-| `react-router-dom` | Routing |
-| `@mui/material`, `@mui/x-data-grid`, `@mui/x-charts`, `@mui/x-date-pickers` | Dashboard UI |
-| `@emotion/react`, `@emotion/styled` | MUI styling |
-| `@tanstack/react-query` | Server state |
-| `axios` | HTTP |
-| `react-hook-form` + `zod` | Forms |
-| `recharts` or MUI Charts | Analytics |
-| `dayjs` | Dates |
-| `file-saver` + `xlsx` | CSV/Excel export |
-| `notistack` or MUI Snackbar | Toasts |
+| Package                               | Purpose      |
+| ------------------------------------- | ------------ |
+| `vite`                                | Bundler      |
+| `react`, `react-dom`                  | UI           |
+| `typescript`                          | Types        |
+| `react-router-dom`                    | Routing      |
+| `@mui/material`, MUI X (as installed) | Dashboard UI |
+| `@tanstack/react-query`               | Server state |
+| `axios`                               | HTTP         |
+| `zustand`                             | Auth / UI    |
+| `notistack`                           | Toasts       |
 
 ---
 
 ## Shared (`shared/`)
 
-| Package | Purpose |
-|---------|---------|
-| `typescript` | Compile types |
-| `zod` (optional) | Shared schemas |
+| Package      | Purpose                   |
+| ------------ | ------------------------- |
+| `typescript` | Compile types / constants |
 
 ---
 
 ## External Services
 
-| Service | Use |
-|---------|-----|
-| MongoDB Atlas | Primary DB |
-| Cloudinary | Images |
-| Stripe | Payments + webhooks |
-| SMTP (SendGrid/Resend/Mailgun) | Email/OTP |
-| Vercel | Frontend + Admin |
-| Railway or Render | Backend |
+| Service                          | Use                                                                      |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| MongoDB Atlas (or local Mongo 7) | Primary DB (`livestock_marketplace`)                                     |
+| Cloudinary                       | Listing / proof / CMS images (`CLOUDINARY_FOLDER=livestock-marketplace`) |
+| SMTP (optional)                  | Email / OTP (mock-friendly in dev)                                       |
+| Vercel                           | Frontend + Admin (+ optional API)                                        |
+| Railway or Render                | Backend API                                                              |
+
+**Payment receiver details** (UPI ID, QR image, bank account, instructions) are stored in MongoDB `settings` with key `payment`, not in Stripe env vars.

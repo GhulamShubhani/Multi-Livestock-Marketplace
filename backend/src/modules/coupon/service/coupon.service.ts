@@ -15,7 +15,7 @@ export interface CouponInput {
   endsAt?: string | Date;
   isActive?: boolean;
   applicableCategories?: string[];
-  applicableCats?: string[];
+  applicableListings?: string[];
 }
 
 export interface CouponValidationResult {
@@ -47,7 +47,7 @@ export class CouponService {
       endsAt: dto.endsAt ? new Date(dto.endsAt) : undefined,
       isActive: dto.isActive ?? true,
       applicableCategories: dto.applicableCategories as never,
-      applicableCats: dto.applicableCats as never,
+      applicableListings: dto.applicableListings as never,
     });
 
     await activityLogService.log({
@@ -71,6 +71,12 @@ export class CouponService {
     if (dto.startsAt !== undefined) update.startsAt = new Date(dto.startsAt);
     if (dto.endsAt !== undefined) update.endsAt = new Date(dto.endsAt);
     if (dto.isActive !== undefined) update.isActive = dto.isActive;
+    if (dto.applicableCategories !== undefined) {
+      update.applicableCategories = dto.applicableCategories as never;
+    }
+    if (dto.applicableListings !== undefined) {
+      update.applicableListings = dto.applicableListings as never;
+    }
 
     const coupon = await couponRepository.updateById(id, update);
     if (!coupon) throw AppError.notFound('Coupon not found');
@@ -98,7 +104,7 @@ export class CouponService {
   async validateForOrder(
     code: string,
     subtotal: number,
-    catIds: string[],
+    listingIds: string[],
     categoryIds: string[],
   ): Promise<CouponValidationResult> {
     const coupon = await couponRepository.findByCode(code);
@@ -120,9 +126,9 @@ export class CouponService {
       throw AppError.badRequest('Order does not meet coupon minimum');
     }
 
-    if (coupon.applicableCats?.length) {
-      const allowed = new Set(coupon.applicableCats.map(String));
-      if (!catIds.some((id) => allowed.has(id))) {
+    if (coupon.applicableListings?.length) {
+      const allowed = new Set(coupon.applicableListings.map(String));
+      if (!listingIds.some((id) => allowed.has(id))) {
         throw AppError.badRequest('Coupon not applicable to these items');
       }
     }
@@ -134,9 +140,7 @@ export class CouponService {
     }
 
     let discount =
-      coupon.type === 'percent'
-        ? Math.floor((subtotal * coupon.value) / 100)
-        : coupon.value;
+      coupon.type === 'percent' ? Math.floor((subtotal * coupon.value) / 100) : coupon.value;
 
     if (coupon.maxDiscount !== undefined) {
       discount = Math.min(discount, coupon.maxDiscount);

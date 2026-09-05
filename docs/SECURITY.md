@@ -7,24 +7,24 @@
 3. Defense in depth (headers + validation + sanitisation + rate limits)
 4. Fail closed (deny by default)
 5. No secrets or stack traces in responses
-6. Audit sensitive actions
+6. Audit sensitive actions (especially payment verify / refund)
 
 ---
 
 ## OWASP Top 10 mapping
 
-| Risk | Mitigations |
-|------|-------------|
-| A01 Broken Access Control | JWT auth + `authorize(permission)` on every protected route; ownership checks for customer resources |
-| A02 Cryptographic Failures | bcrypt (cost ≥ 12); HTTPS only; hashed refresh/reset/OTP tokens; secrets in env |
-| A03 Injection | Mongoose parameterized queries; `express-mongo-sanitize`; express-validator; no raw `$where` |
-| A04 Insecure Design | Layered architecture; webhook-verified payments; email enumeration-safe responses |
-| A05 Security Misconfiguration | Helmet; disable `x-powered-by`; strict CORS allowlist; env validation at boot |
-| A06 Vulnerable Components | Dependabot/npm audit; pin versions; Husky pre-commit |
-| A07 Auth Failures | Rate limit login; account lockout; refresh rotation + reuse detection; strong password policy |
-| A08 Software/Data Integrity | Stripe signature verification; authenticated admin uploads; CI checks |
-| A09 Logging/Monitoring Failures | Winston structured logs; activity_logs; auth/payment logs; no PII secrets in logs |
-| A10 SSRF | No user-controlled outbound URLs for fetch; Cloudinary SDK only |
+| Risk                            | Mitigations                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| A01 Broken Access Control       | JWT auth + `authorize(permission)` on protected routes; ownership checks for customer resources               |
+| A02 Cryptographic Failures      | bcrypt; HTTPS; hashed refresh/reset/OTP; secrets in env                                                       |
+| A03 Injection                   | Mongoose; `express-mongo-sanitize`; express-validator; no raw `$where`                                        |
+| A04 Insecure Design             | Layered architecture; **admin-verified** payments (not client-claimed paid); email enumeration-safe responses |
+| A05 Security Misconfiguration   | Helmet; strict CORS allowlist; Zod env validation at boot                                                     |
+| A06 Vulnerable Components       | npm audit; pin versions; Husky pre-commit                                                                     |
+| A07 Auth Failures               | Rate limit login; account lockout; refresh rotation + reuse detection; strong password policy                 |
+| A08 Software/Data Integrity     | Authenticated admin uploads; CI builds; payment proof stored as media refs only                               |
+| A09 Logging/Monitoring Failures | Winston; activity_logs; auth/payment actions; no secrets in logs                                              |
+| A10 SSRF                        | No user-controlled outbound fetch; Cloudinary SDK only                                                        |
 
 ---
 
@@ -33,15 +33,15 @@
 ```text
 1. requestId
 2. helmet
-3. cors (allowlist origins: frontend + admin)
+3. cors (FRONTEND_URL + ADMIN_URL allowlist, credentials)
 4. compression
 5. cookie-parser
-6. json/urlencoded with size limits (e.g. 100kb; uploads separate)
+6. json/urlencoded with size limits (uploads separate via multer)
 7. express-mongo-sanitize
 8. hpp
-9. xss sanitise
-10. global rate limiter (general)
-11. routes (auth routes get stricter limiter)
+9. xss / sanitize
+10. global rate limiter
+11. routes (stricter limiters on auth)
 12. notFound
 13. errorHandler
 ```
@@ -50,10 +50,10 @@
 
 ## Helmet / headers
 
-- `Content-Security-Policy` tuned per app (Next.js/Admin on Vercel; API separate)
+- CSP tuned per frontend app
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
-- `Frameguard: deny` on API
+- Frameguard deny on API
 - HSTS in production
 
 ---
@@ -61,7 +61,7 @@
 ## CORS
 
 ```text
-origin: [FRONTEND_URL, ADMIN_URL]
+origin: FRONTEND_URL + ADMIN_URL  (comma-separated lists supported)
 credentials: true
 methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
 allowedHeaders: Content-Type, X-CSRF-Token, Authorization
@@ -73,36 +73,31 @@ No `*` with credentials.
 
 ## Rate limiting
 
-| Scope | Limit (starting point) |
-|-------|------------------------|
-| Global | 100 req / 15 min / IP |
-| Login | 5 / 15 min / IP + email |
-| Forgot password | 3 / 15 min / IP |
-| OTP send | 3 / 10 min / user or IP |
-| Upload | 20 / hour / user |
-| Webhook | higher; signature-gated |
+| Scope                 | Limit (starting point)                 |
+| --------------------- | -------------------------------------- |
+| Global                | 100 req / 15 min / IP (`RATE_LIMIT_*`) |
+| Login                 | Strict per IP (+ email)                |
+| Forgot password / OTP | Tight limits                           |
+| Upload                | Per-user hourly cap                    |
 
-Use Redis store in production when multi-instance.
+Use Redis store when running multi-instance production.
 
 ---
 
 ## Password policy
 
-- Min 8–12 chars (configurable; recommend 12)
-- Require upper, lower, number, special
-- Reject common passwords list (optional)
+- Min length enforced for super admin seed (12+)
+- Upper, lower, number, special recommended
 - bcrypt cost factor 12+
 
 ---
 
 ## Input validation
 
-- **Every** body/query/param validated with express-validator
-- ObjectId checks
-- Enum allowlists for status/role
-- Price/quantity bounds
-- Pagination caps (`limit ≤ 100`)
-- File: MIME allowlist (`image/jpeg`, `image/png`, `image/webp`), extension vs magic-byte check, max size (e.g. 5MB)
+- Every body/query/param validated with express-validator
+- ObjectId checks; enum allowlists for status/provider/gender
+- Price/quantity bounds; pagination `limit ≤ 100`
+- File: MIME allowlist (`image/jpeg`, `image/png`, `image/webp`), max size (`UPLOAD_MAX_FILE_SIZE_MB`)
 
 ---
 
@@ -117,36 +112,35 @@ Use Redis store in production when multi-instance.
 }
 ```
 
-- Production: generic 500 message; log full error server-side with `requestId`
-- Never return `passwordHash`, tokens, env, stack
+Production: generic 500; log full error with `requestId`. Never return `passwordHash`, tokens, env, stack.
 
 ---
 
 ## File uploads (Cloudinary)
 
-1. Multer memory/disk with size limit
-2. Validate MIME + file signature
-3. Upload via signed Cloudinary API (server-side)
-4. Store only `url` + `publicId`
-5. Delete/replace through authenticated endpoints
-6. Transform URLs for thumbnails (q_auto, f_auto)
+1. Multer with size limit
+2. Validate MIME
+3. Upload server-side to folder `CLOUDINARY_FOLDER` (default `livestock-marketplace`)
+4. Store `url` + `publicId` only
+5. Payment screenshots use the same pipeline
 
 ---
 
-## Payments (Stripe)
+## Payments (manual UPI — no Stripe)
 
-- Secret key server-only
-- Webhook endpoint uses `express.raw` + `stripe.webhooks.constructEvent`
-- Idempotent webhook handlers (store event id)
-- Refunds only with `payments:refund`
-- Log payment actions without full card data (Stripe never sends PAN)
+- Receiver details live in `settings` key `payment` (UPI ID, QR, bank, instructions)
+- Customer submits proof (`POST /payments/submit`); status becomes `submitted`
+- Only `payments:verify` may approve/reject; `payments:refund` for refunds
+- Do not trust client-reported “paid”
+- Log verify/reject/refund in activity_logs without storing full account secrets in metadata
+- **No** `STRIPE_*` secrets; remove any leftover Stripe keys from env if migrating
 
 ---
 
 ## CSRF + XSS
 
 - Cookie auth ⇒ CSRF token required for mutating browser calls
-- React escapes by default; sanitize CMS HTML with allowlist (`sanitize-html`)
+- React escapes by default; sanitize CMS HTML with allowlist
 - CSP on frontends
 
 ---
@@ -155,38 +149,35 @@ Use Redis store in production when multi-instance.
 
 - Failed login counter + temporary lock
 - Refresh token reuse ⇒ revoke family
-- Email verify for sensitive commerce actions
+- Email verify for checkout / payment submit
 - Admin optional OTP step-up
 
 ---
 
 ## Secrets management
 
-| Secret | Where |
-|--------|-------|
-| `MONGODB_URI` | Backend env |
-| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Backend env |
-| `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` | Backend env |
-| `CLOUDINARY_*` | Backend env |
-| `SMTP_*` | Backend env |
-| Public Stripe/Cloudinary keys | Frontend env only if needed |
+| Secret                                     | Where              |
+| ------------------------------------------ | ------------------ |
+| `MONGODB_URI`                              | Backend env        |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Backend env        |
+| `CLOUDINARY_*`                             | Backend env        |
+| `SUPER_ADMIN_*`                            | Backend env (seed) |
+| SMTP (if configured)                       | Backend env        |
 
-`.env` never committed; `.env.example` documents keys without values.
+**Not required:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, publishable Stripe keys.
 
-Boot fails if required env vars missing (Zod/`envalid`).
+`.env` never committed; `.env.example` documents keys. Boot fails if required env vars missing (Zod).
 
 ---
 
 ## Logging & audit
 
-| Type | Content |
-|------|---------|
-| Access | method, path, status, duration, requestId, IP |
-| Auth | login success/fail, lockouts, refresh reuse |
-| Payment | intent id, amount, status changes |
-| Activity | CRM mutations (who, what, resource) |
-
-Retain logs per policy; redact emails partially if required by privacy policy.
+| Type     | Content                                        |
+| -------- | ---------------------------------------------- |
+| Access   | method, path, status, duration, requestId, IP  |
+| Auth     | login success/fail, lockouts, refresh reuse    |
+| Payment  | submit / verify / refund (ids, amount, status) |
+| Activity | CRM mutations (who, what, resource)            |
 
 ---
 
@@ -195,7 +186,8 @@ Retain logs per policy; redact emails partially if required by privacy policy.
 - [ ] Auth required? (or explicitly public)
 - [ ] Permission / ownership check
 - [ ] Input validated
+- [ ] CSRF on cookie-authenticated mutations
 - [ ] Rate limit if sensitive
-- [ ] Activity log if mutating/admin
+- [ ] Activity log if mutating/admin (esp. payments)
 - [ ] No sensitive fields in response
 - [ ] Errors via AppError + handler

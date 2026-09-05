@@ -1,27 +1,54 @@
 import { Types } from 'mongoose';
-import { env, isDevelopment, primaryFrontendUrl } from '../../../config/env';
-import { isStripeConfigured, stripe } from '../../../config/stripe';
-import { logger } from '../../../config/logger';
 import { AppError } from '../../../utils/AppError';
 import { activityLogService } from '../../activity-log/service/activity-log.service';
 import { orderRepository } from '../../order/repository/order.repository';
 import { orderService } from '../../order/service/order.service';
+import { settingsRepository } from '../../settings/repository/settings.repository';
 import { paymentRepository } from '../repository/payment.repository';
-import type { PaymentDocument } from '../interface/payment.interface';
+import type { PaymentProvider, PaymentRecordStatus } from '../interface/payment.interface';
+import type { MediaAsset } from '../../../types/media';
+
+export interface SubmitPaymentInput {
+  orderId: string;
+  provider?: PaymentProvider;
+  method?: string;
+  transactionId?: string;
+  utr?: string;
+  paymentDate?: string | Date;
+  screenshot?: MediaAsset;
+}
 
 export class PaymentService {
-  async createCheckoutSession(userId: string, orderId: string, ip?: string) {
-    const order = await orderRepository.findByIdForUser(orderId, userId);
+  async getPublicMethods() {
+    const settings = await settingsRepository.findByKey('payment');
+    const value = (settings?.value ?? {}) as Record<string, unknown>;
+
+    return {
+      receiverName: value.receiverName ?? null,
+      mobile: value.mobile ?? null,
+      upiId: value.upiId ?? null,
+      qrCode: value.qrCode ?? null,
+      bankName: value.bankName ?? null,
+      accountHolder: value.accountHolder ?? null,
+      accountNumber: value.accountNumber ?? null,
+      ifsc: value.ifsc ?? null,
+      instructions: value.instructions ?? null,
+      providers: ['upi', 'bank_transfer', 'cod', 'mobile'],
+    };
+  }
+
+  async submitProof(userId: string, dto: SubmitPaymentInput, ip?: string) {
+    const order = await orderRepository.findByIdForUser(dto.orderId, userId);
     if (!order) throw AppError.notFound('Order not found');
     if (order.paymentStatus === 'paid') throw AppError.badRequest('Order already paid');
     if (order.status === 'cancelled') throw AppError.badRequest('Order is cancelled');
 
-    let payment = await paymentRepository.findByOrder(orderId);
+    let payment = await paymentRepository.findByOrder(dto.orderId);
     if (!payment) {
       payment = await paymentRepository.create({
         order: order._id as Types.ObjectId,
         user: new Types.ObjectId(userId),
-        provider: 'stripe',
+        provider: dto.provider ?? 'upi',
         amount: order.total,
         currency: order.currency,
         status: 'pending',
@@ -29,253 +56,128 @@ export class PaymentService {
       });
     }
 
-    if (!isStripeConfigured || !stripe) {
-      const mockSessionId = `mock_cs_${String(payment._id)}`;
-      payment.stripeCheckoutSessionId = mockSessionId;
-      await paymentRepository.save(payment);
-
-      return {
-        mock: true,
-        sessionId: mockSessionId,
-        url: `${primaryFrontendUrl}/checkout/success?session_id=${mockSessionId}&mock=1`,
-        paymentId: String(payment._id),
-      };
+    if (['verified', 'refunded'].includes(payment.status)) {
+      throw AppError.badRequest('Payment can no longer be updated');
     }
 
-    const successUrl =
-      env.STRIPE_SUCCESS_URL ??
-      `${primaryFrontendUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = env.STRIPE_CANCEL_URL ?? `${primaryFrontendUrl}/checkout/cancel`;
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      client_reference_id: String(order._id),
-      metadata: {
-        orderId: String(order._id),
-        paymentId: String(payment._id),
-        userId,
-      },
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: order.currency.toLowerCase(),
-            unit_amount: order.total,
-            product_data: {
-              name: `Order ${order.orderNumber}`,
-              description: order.items
-                .map((i) => i.name)
-                .join(', ')
-                .slice(0, 400),
-            },
-          },
-        },
-      ],
-    });
-
-    payment.stripeCheckoutSessionId = session.id;
+    payment.provider = dto.provider ?? payment.provider ?? 'upi';
+    payment.method = dto.method ?? payment.method;
+    payment.transactionId = dto.transactionId ?? payment.transactionId;
+    payment.utr = dto.utr ?? payment.utr;
+    payment.paymentDate = dto.paymentDate
+      ? new Date(dto.paymentDate)
+      : (payment.paymentDate ?? new Date());
+    payment.screenshot = dto.screenshot ?? payment.screenshot;
+    payment.status = 'submitted';
+    payment.ip = ip ?? payment.ip;
     await paymentRepository.save(payment);
+
+    await orderRepository.updateById(String(order._id), { paymentStatus: 'unpaid' });
 
     await activityLogService.log({
       actor: userId,
-      action: 'payments.checkout_session',
+      action: 'payments.submit',
       module: 'payments',
       resourceId: payment._id,
       ip,
     });
 
-    return {
-      mock: false,
-      sessionId: session.id,
-      url: session.url,
-      paymentId: String(payment._id),
-    };
+    return paymentRepository.findById(String(payment._id));
   }
 
-  async createPaymentIntent(userId: string, orderId: string, ip?: string) {
-    const order = await orderRepository.findByIdForUser(orderId, userId);
-    if (!order) throw AppError.notFound('Order not found');
-    if (order.paymentStatus === 'paid') throw AppError.badRequest('Order already paid');
-
-    let payment = await paymentRepository.findByOrder(orderId);
-    if (!payment) {
-      payment = await paymentRepository.create({
-        order: order._id as Types.ObjectId,
-        user: new Types.ObjectId(userId),
-        provider: 'stripe',
-        amount: order.total,
-        currency: order.currency,
-        status: 'pending',
-        ip,
-      });
-    }
-
-    if (!isStripeConfigured || !stripe) {
-      const mockIntent = `mock_pi_${String(payment._id)}`;
-      payment.stripePaymentIntentId = mockIntent;
-      await paymentRepository.save(payment);
-      return {
-        mock: true,
-        clientSecret: `${mockIntent}_secret_mock`,
-        paymentIntentId: mockIntent,
-        paymentId: String(payment._id),
-      };
-    }
-
-    const intent = await stripe.paymentIntents.create({
-      amount: order.total,
-      currency: order.currency.toLowerCase(),
-      metadata: {
-        orderId: String(order._id),
-        paymentId: String(payment._id),
-        userId,
-      },
-      automatic_payment_methods: { enabled: true },
-    });
-
-    payment.stripePaymentIntentId = intent.id;
-    await paymentRepository.save(payment);
-
-    return {
-      mock: false,
-      clientSecret: intent.client_secret,
-      paymentIntentId: intent.id,
-      paymentId: String(payment._id),
-    };
-  }
-
-  async mockComplete(sessionOrPaymentId: string, userId: string) {
-    if (!isDevelopment) {
-      throw AppError.forbidden('Mock payments are only available in development');
-    }
-
-    let payment = await paymentRepository.findByCheckoutSession(sessionOrPaymentId);
-    if (!payment && /^[a-f\d]{24}$/i.test(sessionOrPaymentId)) {
-      payment = await paymentRepository.findById(sessionOrPaymentId);
-    }
-    if (!payment && sessionOrPaymentId.startsWith('mock_pi_')) {
-      payment = await paymentRepository.findByPaymentIntent(sessionOrPaymentId);
-    }
-
-    if (!payment) throw AppError.notFound('Payment not found');
-    if (String(payment.user) !== userId) throw AppError.forbidden('Forbidden');
-
-    return this.markSucceeded(payment, `mock_event_${Date.now()}`);
-  }
-
-  async handleWebhook(rawBody: Buffer, signature: string | undefined) {
-    if (!isStripeConfigured || !stripe) {
-      throw AppError.badRequest('Stripe is not configured');
-    }
-    if (!env.STRIPE_WEBHOOK_SECRET) {
-      throw AppError.badRequest('Stripe webhook secret missing');
-    }
-    if (!signature) {
-      throw AppError.unauthorized('Missing Stripe signature');
-    }
-
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(rawBody, signature, env.STRIPE_WEBHOOK_SECRET);
-    } catch (error) {
-      logger.error('Stripe webhook signature verification failed', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw AppError.unauthorized('Invalid Stripe webhook signature');
-    }
-
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as { id: string; payment_intent?: string | { id: string } };
-      const payment = await paymentRepository.findByCheckoutSession(session.id);
-      if (payment) {
-        if (typeof session.payment_intent === 'string') {
-          payment.stripePaymentIntentId = session.payment_intent;
-        } else if (session.payment_intent?.id) {
-          payment.stripePaymentIntentId = session.payment_intent.id;
-        }
-        await this.markSucceeded(payment, event.id);
-      }
-    }
-
-    if (event.type === 'payment_intent.succeeded') {
-      const intent = event.data.object as { id: string };
-      const payment = await paymentRepository.findByPaymentIntent(intent.id);
-      if (payment) {
-        await this.markSucceeded(payment, event.id);
-      }
-    }
-
-    if (event.type === 'payment_intent.payment_failed') {
-      const intent = event.data.object as { id: string };
-      const payment = await paymentRepository.findByPaymentIntent(intent.id);
-      if (payment && !payment.processedEventIds.includes(event.id)) {
-        payment.status = 'failed';
-        payment.processedEventIds.push(event.id);
-        await paymentRepository.save(payment);
-        await orderRepository.updateById(String(payment.order), { paymentStatus: 'failed' });
-      }
-    }
-
-    return { received: true };
-  }
-
-  async refund(paymentId: string, actorId: string, amount?: number, reason?: string) {
+  async verify(
+    paymentId: string,
+    actorId: string,
+    decision: 'verified' | 'rejected',
+    opts?: { adminNotes?: string; rejectedReason?: string },
+  ) {
     const payment = await paymentRepository.findById(paymentId);
     if (!payment) throw AppError.notFound('Payment not found');
-    if (payment.status !== 'succeeded' && payment.status !== 'partially_refunded') {
-      throw AppError.badRequest('Payment is not refundable');
+    if (!['submitted', 'under_verification', 'pending'].includes(payment.status)) {
+      throw AppError.badRequest('Payment is not awaiting verification');
     }
 
-    const refundAmount = amount ?? payment.amount;
-    if (refundAmount <= 0 || refundAmount > payment.amount) {
-      throw AppError.badRequest('Invalid refund amount');
-    }
+    if (decision === 'rejected') {
+      payment.status = 'rejected';
+      payment.rejectedReason = opts?.rejectedReason ?? 'Rejected by admin';
+      payment.adminNotes = opts?.adminNotes;
+      payment.verifiedBy = new Types.ObjectId(actorId);
+      payment.verifiedAt = new Date();
+      await paymentRepository.save(payment);
 
-    let stripeRefundId: string | undefined;
+      if (payment.order) {
+        await orderRepository.updateById(String(payment.order), { paymentStatus: 'failed' });
+      }
 
-    if (
-      isStripeConfigured &&
-      stripe &&
-      payment.stripePaymentIntentId &&
-      !payment.stripePaymentIntentId.startsWith('mock_')
-    ) {
-      const refund = await stripe.refunds.create({
-        payment_intent: payment.stripePaymentIntentId,
-        amount: refundAmount,
-        reason:
-          reason === 'fraudulent'
-            ? 'fraudulent'
-            : reason === 'duplicate'
-              ? 'duplicate'
-              : 'requested_by_customer',
+      await activityLogService.log({
+        actor: actorId,
+        action: 'payments.reject',
+        module: 'payments',
+        resourceId: paymentId,
+        severity: 'warn',
       });
-      stripeRefundId = refund.id;
+      return payment;
     }
 
-    payment.refunds.push({
-      stripeRefundId,
-      amount: refundAmount,
-      reason,
-      createdAt: new Date(),
-    });
-
-    const refundedTotal = payment.refunds.reduce((sum, r) => sum + r.amount, 0);
-    payment.status = refundedTotal >= payment.amount ? 'refunded' : 'partially_refunded';
+    payment.status = 'verified';
+    payment.adminNotes = opts?.adminNotes;
+    payment.rejectedReason = undefined;
+    payment.verifiedBy = new Types.ObjectId(actorId);
+    payment.verifiedAt = new Date();
     await paymentRepository.save(payment);
 
-    await orderRepository.updateById(String(payment.order), {
-      paymentStatus: payment.status === 'refunded' ? 'refunded' : 'partially_refunded',
-      ...(payment.status === 'refunded' ? { status: 'refunded' as const } : {}),
+    if (payment.order) {
+      await orderService.markPaid(String(payment.order));
+    }
+
+    await activityLogService.log({
+      actor: actorId,
+      action: 'payments.verify',
+      module: 'payments',
+      resourceId: paymentId,
     });
+
+    return payment;
+  }
+
+  async markUnderVerification(paymentId: string, actorId: string) {
+    const payment = await paymentRepository.updateById(paymentId, {
+      status: 'under_verification' as PaymentRecordStatus,
+    });
+    if (!payment) throw AppError.notFound('Payment not found');
+    await activityLogService.log({
+      actor: actorId,
+      action: 'payments.under_verification',
+      module: 'payments',
+      resourceId: paymentId,
+    });
+    return payment;
+  }
+
+  async refund(paymentId: string, actorId: string, reason?: string) {
+    const payment = await paymentRepository.findById(paymentId);
+    if (!payment) throw AppError.notFound('Payment not found');
+    if (payment.status !== 'verified') {
+      throw AppError.badRequest('Only verified payments can be marked refunded');
+    }
+
+    payment.status = 'refunded';
+    payment.adminNotes = reason ?? payment.adminNotes;
+    await paymentRepository.save(payment);
+
+    if (payment.order) {
+      await orderRepository.updateById(String(payment.order), {
+        paymentStatus: 'refunded',
+        status: 'refunded',
+      });
+    }
 
     await activityLogService.log({
       actor: actorId,
       action: 'payments.refund',
       module: 'payments',
       resourceId: paymentId,
-      metadata: { amount: refundAmount, stripeRefundId },
+      metadata: { reason },
       severity: 'warn',
     });
 
@@ -288,32 +190,6 @@ export class PaymentService {
 
   async listAdmin(query: Record<string, unknown>) {
     return paymentRepository.listAdmin(query);
-  }
-
-  private async markSucceeded(payment: PaymentDocument, eventId: string) {
-    if (payment.processedEventIds.includes(eventId)) {
-      return payment;
-    }
-    if (payment.status === 'succeeded') {
-      payment.processedEventIds.push(eventId);
-      await paymentRepository.save(payment);
-      return payment;
-    }
-
-    payment.status = 'succeeded';
-    payment.processedEventIds.push(eventId);
-    await paymentRepository.save(payment);
-    await orderService.markPaid(String(payment.order));
-
-    await activityLogService.log({
-      actor: payment.user,
-      action: 'payments.succeeded',
-      module: 'payments',
-      resourceId: payment._id,
-      metadata: { eventId },
-    });
-
-    return payment;
   }
 }
 

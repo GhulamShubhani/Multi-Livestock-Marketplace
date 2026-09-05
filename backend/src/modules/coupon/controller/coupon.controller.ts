@@ -29,7 +29,7 @@ export class CouponController {
     const result = await couponService.validateForOrder(
       req.body.code,
       Number(req.body.subtotal),
-      req.body.catIds ?? [],
+      req.body.listingIds ?? [],
       req.body.categoryIds ?? [],
     );
     return ApiResponse.success(
@@ -68,7 +68,7 @@ export const updateCouponValidators = [
 export const validateCouponValidators = [
   body('code').trim().notEmpty(),
   body('subtotal').isInt({ min: 0 }).toInt(),
-  body('catIds').optional().isArray(),
+  body('listingIds').optional().isArray(),
   body('categoryIds').optional().isArray(),
 ];
 

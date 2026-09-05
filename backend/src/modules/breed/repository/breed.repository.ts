@@ -26,9 +26,11 @@ export class BreedRepository {
     skip: number;
     limit: number;
     q?: string;
+    categoryId?: string;
   }): Promise<{ items: BreedDocument[]; total: number }> {
     const query: FilterQuery<IBreed> = {};
     if (params.activeOnly) query.isActive = true;
+    if (params.categoryId) query.categoryIds = params.categoryId;
     if (params.q) {
       query.$or = [
         { name: { $regex: params.q, $options: 'i' } },

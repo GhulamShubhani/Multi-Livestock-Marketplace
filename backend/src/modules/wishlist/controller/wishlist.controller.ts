@@ -11,15 +11,15 @@ export class WishlistController {
   });
 
   add = asyncHandler(async (req: Request, res: Response) => {
-    const wishlist = await wishlistService.add(req.user!.id, req.params.catId);
+    const wishlist = await wishlistService.add(req.user!.id, req.params.listingId);
     return ApiResponse.success(res, { wishlist }, 'Added to wishlist');
   });
 
   remove = asyncHandler(async (req: Request, res: Response) => {
-    const wishlist = await wishlistService.remove(req.user!.id, req.params.catId);
+    const wishlist = await wishlistService.remove(req.user!.id, req.params.listingId);
     return ApiResponse.success(res, { wishlist }, 'Removed from wishlist');
   });
 }
 
 export const wishlistController = new WishlistController();
-export const catIdParam = [param('catId').isMongoId().withMessage('Invalid cat id')];
+export const listingIdParam = [param('listingId').isMongoId().withMessage('Invalid listing id')];

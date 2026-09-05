@@ -3,6 +3,8 @@ export const ROLES = {
   ADMIN: 'admin',
   MANAGER: 'manager',
   STAFF: 'staff',
+  SELLER: 'seller',
+  BUYER: 'buyer',
   CUSTOMER: 'customer',
 } as const;
 
@@ -13,6 +15,8 @@ export const SYSTEM_ROLES: RoleName[] = [
   ROLES.ADMIN,
   ROLES.MANAGER,
   ROLES.STAFF,
+  ROLES.SELLER,
+  ROLES.BUYER,
   ROLES.CUSTOMER,
 ];
 
@@ -30,10 +34,37 @@ export const PERMISSIONS = {
 
   PERMISSIONS_READ: 'permissions:read',
 
-  CATS_CREATE: 'cats:create',
-  CATS_READ: 'cats:read',
-  CATS_UPDATE: 'cats:update',
-  CATS_DELETE: 'cats:delete',
+  LISTINGS_CREATE: 'listings:create',
+  LISTINGS_READ: 'listings:read',
+  LISTINGS_UPDATE: 'listings:update',
+  LISTINGS_DELETE: 'listings:delete',
+  LISTINGS_VERIFY: 'listings:verify',
+
+  ATTRIBUTES_CREATE: 'attributes:create',
+  ATTRIBUTES_READ: 'attributes:read',
+  ATTRIBUTES_UPDATE: 'attributes:update',
+  ATTRIBUTES_DELETE: 'attributes:delete',
+
+  ENQUIRIES_READ: 'enquiries:read',
+  ENQUIRIES_UPDATE: 'enquiries:update',
+
+  SELLERS_READ: 'sellers:read',
+  SELLERS_UPDATE: 'sellers:update',
+
+  LOCATIONS_CREATE: 'locations:create',
+  LOCATIONS_READ: 'locations:read',
+  LOCATIONS_UPDATE: 'locations:update',
+  LOCATIONS_DELETE: 'locations:delete',
+
+  HOMEPAGE_CREATE: 'homepage:create',
+  HOMEPAGE_READ: 'homepage:read',
+  HOMEPAGE_UPDATE: 'homepage:update',
+  HOMEPAGE_DELETE: 'homepage:delete',
+
+  CONTENT_CREATE: 'content:create',
+  CONTENT_READ: 'content:read',
+  CONTENT_UPDATE: 'content:update',
+  CONTENT_DELETE: 'content:delete',
 
   BREEDS_CREATE: 'breeds:create',
   BREEDS_READ: 'breeds:read',
@@ -50,6 +81,7 @@ export const PERMISSIONS = {
   ORDERS_DELETE: 'orders:delete',
 
   PAYMENTS_READ: 'payments:read',
+  PAYMENTS_VERIFY: 'payments:verify',
   PAYMENTS_REFUND: 'payments:refund',
 
   COUPONS_CREATE: 'coupons:create',

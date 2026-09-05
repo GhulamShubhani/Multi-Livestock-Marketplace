@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { OrderModel } from '../../order/model/order.model';
 import { PaymentModel } from '../../payment/model/payment.model';
-import { CatModel } from '../../cat/model/cat.model';
+import { ListingModel } from '../../listing/model/listing.model';
 import { UserModel } from '../../user/model/user.model';
 import { ReviewModel } from '../../review/model/review.model';
 import { RoleModel } from '../../role/model/role.model';
@@ -17,36 +17,40 @@ function startOfDaysAgo(days: number): Date {
 export class DashboardService {
   async overview() {
     const since30 = startOfDaysAgo(30);
-    const customerRole = await RoleModel.findOne({ name: ROLES.CUSTOMER }).select('_id').lean().exec();
+    const [customerRole, buyerRole] = await Promise.all([
+      RoleModel.findOne({ name: ROLES.CUSTOMER }).select('_id').lean().exec(),
+      RoleModel.findOne({ name: ROLES.BUYER }).select('_id').lean().exec(),
+    ]);
+    const buyerRoleIds = [customerRole?._id, buyerRole?._id].filter(Boolean) as Types.ObjectId[];
 
     const [
       usersTotal,
       customersTotal,
-      catsAvailable,
-      catsReserved,
-      catsSold,
+      listingsAvailable,
+      listingsReserved,
+      listingsSold,
       ordersTotal,
       ordersPending,
       revenueAgg,
-      paymentsSucceeded,
+      paymentsVerified,
       reviewsPending,
       recentOrders,
       salesByDay,
     ] = await Promise.all([
       UserModel.countDocuments().exec(),
-      customerRole
-        ? UserModel.countDocuments({ role: customerRole._id as Types.ObjectId }).exec()
+      buyerRoleIds.length
+        ? UserModel.countDocuments({ role: { $in: buyerRoleIds } }).exec()
         : Promise.resolve(0),
-      CatModel.countDocuments({ status: 'available' }).exec(),
-      CatModel.countDocuments({ status: 'reserved' }).exec(),
-      CatModel.countDocuments({ status: 'sold' }).exec(),
+      ListingModel.countDocuments({ availabilityStatus: 'available', isActive: true }).exec(),
+      ListingModel.countDocuments({ availabilityStatus: 'reserved' }).exec(),
+      ListingModel.countDocuments({ availabilityStatus: 'sold' }).exec(),
       OrderModel.countDocuments().exec(),
       OrderModel.countDocuments({ status: 'pending' }).exec(),
       OrderModel.aggregate<{ total: number; count: number }>([
         { $match: { paymentStatus: 'paid' } },
         { $group: { _id: null, total: { $sum: '$total' }, count: { $sum: 1 } } },
       ]).exec(),
-      PaymentModel.countDocuments({ status: 'succeeded' }).exec(),
+      PaymentModel.countDocuments({ status: 'verified' }).exec(),
       ReviewModel.countDocuments({ status: 'pending' }).exec(),
       OrderModel.find()
         .sort({ createdAt: -1 })
@@ -77,14 +81,14 @@ export class DashboardService {
       cards: {
         usersTotal,
         customersTotal,
-        catsAvailable,
-        catsReserved,
-        catsSold,
+        listingsAvailable,
+        listingsReserved,
+        listingsSold,
         ordersTotal,
         ordersPending,
         paidOrders: revenueAgg[0]?.count ?? 0,
         revenueCents: revenueAgg[0]?.total ?? 0,
-        paymentsSucceeded,
+        paymentsVerified,
         reviewsPending,
       },
       salesLast30Days: salesByDay.map((d) => ({
@@ -132,20 +136,22 @@ export class DashboardService {
   }
 
   async inventory() {
-    const [byStatus, lowStock, featured] = await Promise.all([
-      CatModel.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]).exec(),
-      CatModel.find({ stock: { $lte: 1 }, status: { $in: ['available', 'reserved'] } })
-        .select('name slug stock status price')
-        .sort({ stock: 1 })
+    const [byStatus, reserved, featured] = await Promise.all([
+      ListingModel.aggregate([
+        { $group: { _id: '$availabilityStatus', count: { $sum: 1 } } },
+      ]).exec(),
+      ListingModel.find({ availabilityStatus: 'reserved' })
+        .select('title slug listingId availabilityStatus price')
+        .sort({ updatedAt: -1 })
         .limit(20)
         .lean()
         .exec(),
-      CatModel.countDocuments({ featured: true, status: 'available' }).exec(),
+      ListingModel.countDocuments({ featured: true, availabilityStatus: 'available' }).exec(),
     ]);
 
     return {
       byStatus: byStatus.map((d) => ({ status: d._id as string, count: d.count as number })),
-      lowStock,
+      reserved,
       featuredAvailable: featured,
     };
   }

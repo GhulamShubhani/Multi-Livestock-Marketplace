@@ -37,7 +37,14 @@ export function CategoriesPage() {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryAdmin | null>(null);
-  const [form, setForm] = useState({ name: '', description: '', isActive: true, sortOrder: 0 });
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    icon: '',
+    group: '',
+    isActive: true,
+    sortOrder: 0,
+  });
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const query = useQuery({
@@ -50,6 +57,8 @@ export function CategoriesPage() {
       const body = {
         name: form.name,
         description: form.description || undefined,
+        icon: form.icon || undefined,
+        group: form.group || undefined,
         isActive: form.isActive,
         sortOrder: Number(form.sortOrder),
       };
@@ -78,6 +87,7 @@ export function CategoriesPage() {
   const columns = useMemo(
     () => [
       { key: 'name', label: 'Name' },
+      { key: 'group', label: 'Group' },
       { key: 'slug', label: 'Slug' },
       { key: 'active', label: 'Active' },
       { key: 'actions', label: '', align: 'right' as const },
@@ -89,14 +99,21 @@ export function CategoriesPage() {
     <>
       <PageHeader
         title="Categories"
-        description="Organize catalog listings."
+        description="Organize livestock listings by animal type."
         action={
           canCreate ? (
             <PrimaryAction
               label="Add category"
               onClick={() => {
                 setEditing(null);
-                setForm({ name: '', description: '', isActive: true, sortOrder: 0 });
+                setForm({
+                  name: '',
+                  description: '',
+                  icon: '',
+                  group: '',
+                  isActive: true,
+                  sortOrder: 0,
+                });
                 setOpen(true);
               }}
             />
@@ -124,6 +141,7 @@ export function CategoriesPage() {
         {rows.map((row) => (
           <TableRow key={row._id} hover>
             <TableCell>{row.name}</TableCell>
+            <TableCell>{row.group || '—'}</TableCell>
             <TableCell>{row.slug}</TableCell>
             <TableCell>{row.isActive ? 'Yes' : 'No'}</TableCell>
             <TableCell align="right">
@@ -135,6 +153,8 @@ export function CategoriesPage() {
                     setForm({
                       name: row.name,
                       description: row.description ?? '',
+                      icon: row.icon ?? '',
+                      group: row.group ?? '',
                       isActive: row.isActive,
                       sortOrder: row.sortOrder ?? 0,
                     });
@@ -158,7 +178,11 @@ export function CategoriesPage() {
         <DialogTitle>{editing ? 'Edit category' : 'Add category'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField label="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            <TextField
+              label="Name"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            />
             <TextField
               label="Description"
               multiline
@@ -166,6 +190,22 @@ export function CategoriesPage() {
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                fullWidth
+                label="Group"
+                helperText="e.g. cattle, poultry"
+                value={form.group}
+                onChange={(e) => setForm((f) => ({ ...f, group: e.target.value }))}
+              />
+              <TextField
+                fullWidth
+                label="Icon"
+                helperText="Icon key or emoji"
+                value={form.icon}
+                onChange={(e) => setForm((f) => ({ ...f, icon: e.target.value }))}
+              />
+            </Stack>
             <TextField
               type="number"
               label="Sort order"
@@ -174,7 +214,10 @@ export function CategoriesPage() {
             />
             <FormControlLabel
               control={
-                <Switch checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} />
+                <Switch
+                  checked={form.isActive}
+                  onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+                />
               }
               label="Active"
             />
@@ -182,7 +225,11 @@ export function CategoriesPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+          <Button
+            variant="contained"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+          >
             Save
           </Button>
         </DialogActions>

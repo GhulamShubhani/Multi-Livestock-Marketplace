@@ -47,6 +47,7 @@ export const breedListValidators = [
   query('page').optional().isInt({ min: 1 }).toInt(),
   query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
   query('q').optional().isString().isLength({ max: 100 }),
+  query('categoryId').optional().isMongoId(),
 ];
 
 export const createBreedValidators = [
@@ -57,6 +58,8 @@ export const createBreedValidators = [
   body('temperament').optional().isArray(),
   body('temperament.*').optional().isString(),
   body('lifeSpan').optional().isString().isLength({ max: 50 }),
+  body('categoryIds').optional().isArray(),
+  body('categoryIds.*').optional().isMongoId(),
   body('isActive').optional().isBoolean().toBoolean(),
   body('image').optional().isObject(),
   body('image.url').optional().isURL(),
@@ -71,6 +74,8 @@ export const updateBreedValidators = [
   body('origin').optional().isString().isLength({ max: 120 }),
   body('temperament').optional().isArray(),
   body('lifeSpan').optional().isString().isLength({ max: 50 }),
+  body('categoryIds').optional().isArray(),
+  body('categoryIds.*').optional().isMongoId(),
   body('isActive').optional().isBoolean().toBoolean(),
   body('image').optional().isObject(),
 ];

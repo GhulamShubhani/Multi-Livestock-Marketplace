@@ -3,14 +3,19 @@ export interface MediaAsset {
   publicId: string;
 }
 
-export interface CatImage extends MediaAsset {
+export interface ListingImage extends MediaAsset {
   isPrimary?: boolean;
   alt?: string;
 }
 
-export interface CatVideo extends MediaAsset {
+export interface ListingVideo extends MediaAsset {
   alt?: string;
 }
+
+/** @deprecated Use ListingImage */
+export type CatImage = ListingImage;
+/** @deprecated Use ListingVideo */
+export type CatVideo = ListingVideo;
 
 export interface SeoFields {
   title?: string;

@@ -1,4 +1,8 @@
-# Backend
+# Backend — Multi-Livestock Marketplace API
+
+Express + TypeScript + MongoDB REST API. Base path: `/api/v1`.
+
+Workspace package: `@cat-marketplace/backend`.
 
 ## Run
 
@@ -10,86 +14,103 @@ npm run dev --workspace=@cat-marketplace/backend
 
 Health: `GET http://localhost:5000/api/v1/health`
 
-## Auth (Phase 2)
+Key env (see `.env.example`):
+
+- `MONGODB_URI` → database `livestock_marketplace`
+- `DEFAULT_CURRENCY=INR`
+- `CLOUDINARY_FOLDER=livestock-marketplace`
+- **No `STRIPE_*`** — payment receiver config lives in Settings (`payment`)
+
+## Auth
 
 Base: `/api/v1/auth`
 
-| Endpoint | Notes |
-|----------|-------|
-| `POST /register` | Customer signup + cookies |
-| `POST /login` | Sets access/refresh/csrf cookies |
-| `POST /refresh` | Refresh rotation |
-| `GET /me` | Current user + permissions |
-| `POST /logout` | Requires `X-CSRF-Token` |
-| `POST /logout-all` | Requires `X-CSRF-Token` |
-| `POST /verify-email` | Body: `{ token }` |
-| `POST /forgot-password` | Always 200 |
-| `POST /reset-password` | Body: `{ token, password }` |
-| `POST /otp/send` / `/otp/verify` | Email OTP |
+| Endpoint                                                    | Notes                            |
+| ----------------------------------------------------------- | -------------------------------- |
+| `POST /register`                                            | Buyer signup + cookies           |
+| `POST /login`                                               | Sets access/refresh/csrf cookies |
+| `POST /refresh`                                             | Refresh rotation                 |
+| `GET /me`                                                   | Current user + permissions       |
+| `POST /logout` / `/logout-all`                              | Requires `X-CSRF-Token`          |
+| `POST /verify-email`, `/forgot-password`, `/reset-password` | Email flows                      |
+| `POST /otp/send` / `/otp/verify`                            | Email OTP                        |
 
-Seed on boot (`SEED_ON_BOOT=true`) creates roles, permissions, and super admin from env.
+Seed (`SEED_ON_BOOT=true` or CLI):
 
 ```bash
 npm run seed --workspace=@cat-marketplace/backend
 ```
 
-Default super admin (change in `.env`):
+Creates roles (incl. `seller`, `buyer`), permissions, super admin, default categories/attributes/breeds, homepage sections, settings.
 
-- `SUPER_ADMIN_EMAIL`
-- `SUPER_ADMIN_PASSWORD`
+## Users & Profile
 
-## Users & Profile (Phase 3)
+| Area        | Endpoints                                                           |
+| ----------- | ------------------------------------------------------------------- |
+| Admin users | `GET/POST /users`, `GET/PATCH/DELETE /users/:id`, status + sessions |
+| Profile     | `GET/PATCH /profile`, password, addresses, own sessions             |
 
-| Area | Endpoints |
-|------|-----------|
-| Admin users | `GET/POST /users`, `GET/PATCH/DELETE /users/:id`, `PATCH /users/:id/status` |
-| Admin sessions | `GET/DELETE /users/:id/sessions`, `DELETE /users/:id/sessions/:sessionId` |
-| Profile | `GET/PATCH /profile`, `PATCH /profile/password` |
-| Addresses | `GET/POST /profile/addresses`, `PATCH/DELETE /profile/addresses/:addressId` |
-| Own sessions | `GET/DELETE /profile/sessions`, `DELETE /profile/sessions/:sessionId` |
+Mutating routes require `X-CSRF-Token`. Admin routes require `users:*`.
 
-Mutating routes require `X-CSRF-Token`. Admin user routes require `users:*` permissions.
+## Catalog (dynamic)
 
-## Catalog & Uploads (Phase 4)
+| Resource   | Public                                      | Admin                               |
+| ---------- | ------------------------------------------- | ----------------------------------- |
+| Categories | `GET /categories`, slug                     | CRUD + `categories:*`               |
+| Breeds     | `GET /breeds`, slug                         | CRUD + `breeds:*`                   |
+| Attributes | list by category                            | CRUD + `attributes:*`               |
+| Listings   | `GET /listings`, `GET /listings/slug/:slug` | CRUD, status, verify (`listings:*`) |
+| Uploads    | —                                           | `POST /uploads/image(s)`, delete    |
 
-| Resource | Public | Admin |
-|----------|--------|-------|
-| Categories | `GET /categories`, `GET /categories/slug/:slug` | CRUD + `/categories/admin` |
-| Breeds | `GET /breeds`, `GET /breeds/slug/:slug` | CRUD + `/breeds/admin` |
-| Cats | `GET /cats` (filters), `GET /cats/slug/:slug` | CRUD + status + `/cats/admin` |
-| Uploads | — | `POST /uploads/image`, `POST /uploads/images`, `DELETE /uploads` |
+Listing filters: `q`, category, breed, gender, featured, price, location, sort. Prices are integer **paise** (INR default).
 
-Cat filters: `q`, `breed`, `category`, `gender`, `featured`, `minPrice`, `maxPrice`, `sort`.  
-Prices are integer **cents**. Cloudinary is optional in development (mock URLs if unset).
+There is no active `/cats` mount — use listings + category.
 
-## Commerce (Phase 5)
+## Sellers & Enquiries
 
-| Area | Endpoints |
-|------|-----------|
-| Wishlist | `GET/POST/DELETE /wishlist/:catId` |
-| Coupons | `POST /coupons/validate`, admin CRUD `/coupons` |
-| Orders | `POST /orders`, `GET /orders/me`, admin list/status/cancel |
-| Payments | `POST /payments/checkout-session`, `/payment-intent`, webhook, refunds |
-| Reviews | `GET /reviews?catId=`, `POST /reviews`, moderate `/reviews/:id/status` |
+| Area         | Notes                                     |
+| ------------ | ----------------------------------------- |
+| `/sellers`   | Seller profiles; admin `sellers:read      | update` |
+| `/enquiries` | Buyer interest / contact; `enquiries:read | update` |
 
-Checkout requires verified email. Without Stripe keys, use `POST /payments/mock-complete` in development.  
-Webhook: `POST /api/v1/payments/webhook` (raw body + Stripe signature).
+## Homepage
 
-## Ops (Phase 6)
+| Area        | Notes                                      |
+| ----------- | ------------------------------------------ |
+| `/homepage` | Public active sections; admin `homepage:*` |
 
-| Area | Endpoints |
-|------|-----------|
-| Notifications | `GET /notifications`, mark read, admin create/broadcast |
-| Settings | `GET /settings/public/:key`, admin list/get/put |
-| CMS | Public `GET /cms/:slug`, admin CRUD under `/cms` + `/cms/admin/:id` |
-| Banners | Public `GET /banners`, admin CRUD |
-| Activity logs | `GET /activity-logs` |
-| Dashboard | `GET /dashboard/overview`, `/sales`, `/inventory` |
+Types: hero, categories, carousel, promo, info, banner, cta.
 
-Public settings keys: `general`, `seo`, `storefront`.
+## Commerce
+
+| Area     | Endpoints                                                                                         |
+| -------- | ------------------------------------------------------------------------------------------------- |
+| Wishlist | `GET/POST/DELETE /wishlist/:listingId`                                                            |
+| Coupons  | `POST /coupons/validate`, admin CRUD                                                              |
+| Orders   | `POST /orders`, `GET /orders/me`, admin status/cancel                                             |
+| Payments | `GET /methods`, `POST /submit`, `GET /me`, admin list / `PATCH /:id/verify` / `PATCH /:id/refund` |
+| Reviews  | `GET /reviews?listingId=`, create, moderate                                                       |
+
+Checkout requires verified email. Payment providers: `upi`, `bank_transfer`, `cod`, `mobile`. Admin verifies proof — **no Stripe webhooks**.
+
+## Ops
+
+| Area          | Endpoints                              |
+| ------------- | -------------------------------------- |
+| Notifications | list, mark read, admin create          |
+| Settings      | public keys incl. `payment`; admin put |
+| CMS / Banners | public read + admin CRUD               |
+| Activity logs | `GET /activity-logs`                   |
+| Dashboard     | overview, sales, inventory             |
 
 ## Local MongoDB (Docker)
 
 ```bash
-docker run -d --name cat-mongo -p 27017:27017 mongo:7
+# Preferred: compose from monorepo root
+npm run docker:up
+
+# Or standalone
+docker run -d --name livestock-mongo -p 27017:27017 mongo:7
 ```
+
+Connection string example: `mongodb://127.0.0.1:27017/livestock_marketplace`

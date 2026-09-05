@@ -9,6 +9,7 @@ const breedSchema = new Schema<IBreed>(
     origin: { type: String, trim: true },
     temperament: [{ type: String, trim: true }],
     lifeSpan: { type: String, trim: true },
+    categoryIds: [{ type: Schema.Types.ObjectId, ref: 'Category', index: true }],
     image: {
       url: String,
       publicId: String,

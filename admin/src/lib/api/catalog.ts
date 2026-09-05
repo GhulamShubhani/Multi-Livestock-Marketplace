@@ -1,20 +1,32 @@
 import { apiGet, apiMutate } from '@/lib/api/client';
 
-export type CatAdmin = {
+export type ListingLocation = {
+  country: string;
+  state: string;
+  district?: string;
+  city: string;
+  village?: string;
+  area?: string;
+  pincode?: string;
+};
+
+export type ListingAdmin = {
   _id: string;
-  name: string;
+  title: string;
   slug: string;
+  listingId?: string;
   description: string;
   shortDescription?: string;
-  breed: { _id: string; name: string } | string;
   category: { _id: string; name: string } | string;
-  ageMonths: number;
-  gender: string;
+  subcategory?: { _id: string; name: string } | string;
+  breed?: { _id: string; name: string } | string;
   price: number;
+  negotiable?: boolean;
   currency: string;
-  stock: number;
-  status: string;
-  featured: boolean;
+  seller?: { _id: string; name?: string; email?: string } | string;
+  sellerMobile?: string;
+  sellerWhatsApp?: string;
+  location: ListingLocation;
   images?: Array<{
     url: string;
     publicId: string;
@@ -26,9 +38,47 @@ export type CatAdmin = {
     publicId: string;
     alt?: string;
   }>;
-  vaccinated?: boolean;
-  neutered?: boolean;
-  pedigree?: boolean;
+  ageMonths?: number;
+  gender: string;
+  weight?: number;
+  healthStatus?: string;
+  vaccinationStatus?: string;
+  availabilityStatus: string;
+  verificationStatus: string;
+  featured: boolean;
+  premium?: boolean;
+  isActive?: boolean;
+  attributes?: Record<string, unknown>;
+};
+
+export type AttributeType =
+  | 'text'
+  | 'number'
+  | 'decimal'
+  | 'boolean'
+  | 'date'
+  | 'select'
+  | 'multiselect'
+  | 'radio'
+  | 'textarea'
+  | 'yes_no'
+  | 'image';
+
+export type AttributeAdmin = {
+  _id: string;
+  name: string;
+  slug: string;
+  key: string;
+  label: string;
+  type: AttributeType;
+  unit?: string;
+  options?: string[];
+  required: boolean;
+  categoryIds: Array<string | { _id: string; name?: string }>;
+  sortOrder?: number;
+  isActive: boolean;
+  filterable: boolean;
+  showOnCard: boolean;
 };
 
 export type CategoryAdmin = {
@@ -36,6 +86,8 @@ export type CategoryAdmin = {
   name: string;
   slug: string;
   description?: string;
+  icon?: string;
+  group?: string;
   isActive: boolean;
   sortOrder?: number;
 };
@@ -50,15 +102,33 @@ export type BreedAdmin = {
 };
 
 export const catalogApi = {
-  listCats: (params?: Record<string, unknown>) =>
-    apiGet<{ cats: CatAdmin[] }>('/cats/admin', params),
-  getCat: (id: string) => apiGet<{ cat: CatAdmin }>(`/cats/admin/${id}`),
-  createCat: (body: Record<string, unknown>) => apiMutate<{ cat: CatAdmin }>('post', '/cats', body),
-  updateCat: (id: string, body: Record<string, unknown>) =>
-    apiMutate<{ cat: CatAdmin }>('patch', `/cats/${id}`, body),
-  setCatStatus: (id: string, status: string) =>
-    apiMutate<{ cat: CatAdmin }>('patch', `/cats/${id}/status`, { status }),
-  deleteCat: (id: string) => apiMutate<null>('delete', `/cats/${id}`),
+  listListings: (params?: Record<string, unknown>) =>
+    apiGet<{ listings: ListingAdmin[] }>('/listings/admin', params),
+  getListing: (id: string) => apiGet<{ listing: ListingAdmin }>(`/listings/admin/${id}`),
+  createListing: (body: Record<string, unknown>) =>
+    apiMutate<{ listing: ListingAdmin }>('post', '/listings', body),
+  updateListing: (id: string, body: Record<string, unknown>) =>
+    apiMutate<{ listing: ListingAdmin }>('patch', `/listings/${id}`, body),
+  setListingStatus: (id: string, availabilityStatus: string) =>
+    apiMutate<{ listing: ListingAdmin }>('patch', `/listings/${id}/status`, {
+      availabilityStatus,
+    }),
+  verifyListing: (id: string, verificationStatus: string) =>
+    apiMutate<{ listing: ListingAdmin }>('patch', `/listings/${id}/verify`, {
+      verificationStatus,
+    }),
+  deleteListing: (id: string) => apiMutate<null>('delete', `/listings/${id}`),
+
+  listAttributes: (params?: Record<string, unknown>) =>
+    apiGet<{ attributes: AttributeAdmin[] }>('/attributes/admin', params),
+  listAttributesByCategory: (categoryId: string) =>
+    apiGet<{ attributes: AttributeAdmin[] }>(`/attributes/category/${categoryId}`),
+  getAttribute: (id: string) => apiGet<{ attribute: AttributeAdmin }>(`/attributes/admin/${id}`),
+  createAttribute: (body: Record<string, unknown>) =>
+    apiMutate<{ attribute: AttributeAdmin }>('post', '/attributes', body),
+  updateAttribute: (id: string, body: Record<string, unknown>) =>
+    apiMutate<{ attribute: AttributeAdmin }>('patch', `/attributes/${id}`, body),
+  deleteAttribute: (id: string) => apiMutate<null>('delete', `/attributes/${id}`),
 
   listCategories: (params?: Record<string, unknown>) =>
     apiGet<{ categories: CategoryAdmin[] }>('/categories/admin', params),

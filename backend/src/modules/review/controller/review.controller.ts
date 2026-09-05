@@ -27,9 +27,10 @@ export class ReviewController {
   });
 
   remove = asyncHandler(async (req: Request, res: Response) => {
-    const isAdmin = req.user!.permissions.includes(PERMISSIONS.REVIEWS_DELETE)
-      || req.user!.role === 'super_admin'
-      || req.user!.role === 'admin';
+    const isAdmin =
+      req.user!.permissions.includes(PERMISSIONS.REVIEWS_DELETE) ||
+      req.user!.role === 'super_admin' ||
+      req.user!.role === 'admin';
     await reviewService.remove(req.params.id, req.user!.id, isAdmin);
     return ApiResponse.success(res, null, 'Review deleted');
   });
@@ -38,14 +39,14 @@ export class ReviewController {
 export const reviewController = new ReviewController();
 
 export const listReviewValidators = [
-  query('catId').optional().isMongoId(),
+  query('listingId').optional().isMongoId(),
   query('page').optional().isInt({ min: 1 }).toInt(),
   query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
   query('status').optional().isIn(['pending', 'approved', 'rejected']),
 ];
 
 export const createReviewValidators = [
-  body('catId').isMongoId(),
+  body('listingId').isMongoId(),
   body('rating').isInt({ min: 1, max: 5 }).toInt(),
   body('title').optional().isString().isLength({ max: 120 }),
   body('body').optional().isString().isLength({ max: 2000 }),

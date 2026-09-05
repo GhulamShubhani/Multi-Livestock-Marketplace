@@ -57,3 +57,42 @@ export const authenticate: RequestHandler = async (req, _res, next) => {
     next(error);
   }
 };
+
+/** Attach user when a valid access cookie exists; otherwise continue as guest. */
+export const optionalAuthenticate: RequestHandler = async (req, _res, next) => {
+  try {
+    const token = req.cookies?.[COOKIE_NAMES.ACCESS] as string | undefined;
+    if (!token) {
+      next();
+      return;
+    }
+
+    let payload;
+    try {
+      payload = verifyAccessToken(token);
+    } catch {
+      next();
+      return;
+    }
+
+    const user = await userRepository.findByIdWithRole(payload.sub);
+    if (!user || user.status === 'banned' || user.status === 'inactive') {
+      next();
+      return;
+    }
+
+    const { roleName, permissions } = extractRoleAndPermissions(user);
+    req.user = {
+      id: String(user._id),
+      email: user.email,
+      role: roleName,
+      permissions,
+      isEmailVerified: user.isEmailVerified,
+      status: user.status,
+    };
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};

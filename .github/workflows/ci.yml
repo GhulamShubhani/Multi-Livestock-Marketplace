@@ -24,6 +24,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Test
+        run: npm run test
+
       - name: Build backend
         run: npm run build:backend
 
@@ -32,10 +35,10 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:5000/api/v1
           NEXT_PUBLIC_APP_URL: http://localhost:3000
-          NEXT_PUBLIC_APP_NAME: Cat Marketplace
+          NEXT_PUBLIC_APP_NAME: Livestock Marketplace
 
       - name: Build admin
         run: npm run build:admin
         env:
           VITE_API_URL: http://localhost:5000/api/v1
-          VITE_APP_NAME: Cat Marketplace Admin
+          VITE_APP_NAME: Livestock Marketplace Admin

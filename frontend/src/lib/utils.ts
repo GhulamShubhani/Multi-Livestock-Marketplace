@@ -5,15 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatMoney(cents: number, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', {
+export function formatMoney(cents: number, currency = 'INR') {
+  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
     style: 'currency',
     currency,
   }).format(cents / 100);
 }
 
-export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Cat Marketplace';
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Livestock Marketplace';
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3005';
 
 const API_LOCAL = process.env.NEXT_PUBLIC_API_LOCAL_URL ?? 'http://localhost:5000/api/v1';
 const API_REMOTE =

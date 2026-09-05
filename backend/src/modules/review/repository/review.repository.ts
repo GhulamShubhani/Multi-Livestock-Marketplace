@@ -13,14 +13,14 @@ export class ReviewRepository {
     return ReviewModel.findById(id).populate('user', 'firstName lastName').exec();
   }
 
-  async findByCatAndUser(catId: string, userId: string): Promise<ReviewDocument | null> {
-    return ReviewModel.findOne({ cat: catId, user: userId }).exec();
+  async findByListingAndUser(listingId: string, userId: string): Promise<ReviewDocument | null> {
+    return ReviewModel.findOne({ listing: listingId, user: userId }).exec();
   }
 
   async list(query: Record<string, unknown>, approvedOnly = false) {
     const { page, limit, skip } = parsePagination(query.page, query.limit);
     const filter: FilterQuery<IReview> = {};
-    if (typeof query.catId === 'string') filter.cat = query.catId;
+    if (typeof query.listingId === 'string') filter.listing = query.listingId;
     if (approvedOnly) filter.status = 'approved';
     else if (typeof query.status === 'string') filter.status = query.status as IReview['status'];
 
@@ -44,12 +44,12 @@ export class ReviewRepository {
     return Boolean(await ReviewModel.findByIdAndDelete(id).exec());
   }
 
-  async aggregateRatings(catId: string): Promise<{ average: number; count: number }> {
+  async aggregateRatings(listingId: string): Promise<{ average: number; count: number }> {
     const [result] = await ReviewModel.aggregate<{ average: number; count: number }>([
-      { $match: { cat: new Types.ObjectId(catId), status: 'approved' } },
+      { $match: { listing: new Types.ObjectId(listingId), status: 'approved' } },
       {
         $group: {
-          _id: '$cat',
+          _id: '$listing',
           average: { $avg: '$rating' },
           count: { $sum: 1 },
         },

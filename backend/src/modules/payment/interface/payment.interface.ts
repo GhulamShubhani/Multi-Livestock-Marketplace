@@ -1,33 +1,29 @@
 import type { Document, Types } from 'mongoose';
+import type { MediaAsset } from '../../../types/media';
+
+export type PaymentProvider = 'upi' | 'bank_transfer' | 'cod' | 'mobile';
 
 export type PaymentRecordStatus =
-  | 'pending'
-  | 'succeeded'
-  | 'failed'
-  | 'refunded'
-  | 'partially_refunded';
-
-export interface IPaymentRefund {
-  stripeRefundId?: string;
-  amount: number;
-  reason?: string;
-  createdAt: Date;
-}
+  'pending' | 'submitted' | 'under_verification' | 'verified' | 'rejected' | 'refunded';
 
 export interface IPayment {
-  order: Types.ObjectId;
+  order?: Types.ObjectId;
+  listing?: Types.ObjectId;
   user: Types.ObjectId;
-  provider: 'stripe';
-  stripePaymentIntentId?: string;
-  stripeCheckoutSessionId?: string;
-  stripeInvoiceId?: string;
+  seller?: Types.ObjectId;
+  provider: PaymentProvider;
   amount: number;
   currency: string;
   status: PaymentRecordStatus;
   method?: string;
-  receiptUrl?: string;
-  refunds: IPaymentRefund[];
-  processedEventIds: string[];
+  transactionId?: string;
+  utr?: string;
+  paymentDate?: Date;
+  screenshot?: MediaAsset;
+  adminNotes?: string;
+  verifiedBy?: Types.ObjectId;
+  verifiedAt?: Date;
+  rejectedReason?: string;
   ip?: string;
   createdAt: Date;
   updatedAt: Date;

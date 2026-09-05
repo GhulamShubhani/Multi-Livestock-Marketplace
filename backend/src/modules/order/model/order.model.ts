@@ -16,7 +16,7 @@ const addressSchema = new Schema(
 
 const orderItemSchema = new Schema(
   {
-    cat: { type: Schema.Types.ObjectId, ref: 'Cat', required: true },
+    listing: { type: Schema.Types.ObjectId, ref: 'Listing', required: true },
     name: { type: String, required: true },
     sku: String,
     image: String,

@@ -7,8 +7,8 @@ import type { WishlistItemLocal } from '@/types/api';
 type WishlistState = {
   items: WishlistItemLocal[];
   addItem: (item: WishlistItemLocal) => void;
-  removeItem: (catId: string) => void;
-  has: (catId: string) => boolean;
+  removeItem: (listingId: string) => void;
+  has: (listingId: string) => boolean;
   clear: () => void;
 };
 
@@ -18,13 +18,14 @@ export const useWishlistStore = create<WishlistState>()(
       items: [],
       addItem: (item) =>
         set((state) => {
-          if (state.items.some((i) => i.catId === item.catId)) return state;
+          if (state.items.some((i) => i.listingId === item.listingId)) return state;
           return { items: [...state.items, item] };
         }),
-      removeItem: (catId) => set((state) => ({ items: state.items.filter((i) => i.catId !== catId) })),
-      has: (catId) => get().items.some((i) => i.catId === catId),
+      removeItem: (listingId) =>
+        set((state) => ({ items: state.items.filter((i) => i.listingId !== listingId) })),
+      has: (listingId) => get().items.some((i) => i.listingId === listingId),
       clear: () => set({ items: [] }),
     }),
-    { name: 'cat-marketplace-wishlist' },
+    { name: 'livestock-marketplace-wishlist' },
   ),
 );

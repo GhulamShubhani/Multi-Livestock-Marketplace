@@ -16,7 +16,8 @@ export function ReviewsPage() {
   const { enqueueSnackbar } = useSnackbar();
   const perms = useAuthStore((s) => s.user?.permissions);
   const canModerate = hasPermission(perms, 'reviews:moderate');
-  const canDelete = hasPermission(perms, 'reviews:delete') || hasPermission(perms, 'reviews:moderate');
+  const canDelete =
+    hasPermission(perms, 'reviews:delete') || hasPermission(perms, 'reviews:moderate');
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState('pending');
 
@@ -26,7 +27,8 @@ export function ReviewsPage() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, next }: { id: string; next: string }) => commerceApi.setReviewStatus(id, next),
+    mutationFn: ({ id, next }: { id: string; next: string }) =>
+      commerceApi.setReviewStatus(id, next),
     onSuccess: async () => {
       enqueueSnackbar('Review updated', { variant: 'success' });
       await qc.invalidateQueries({ queryKey: ['admin-reviews'] });
@@ -91,8 +93,11 @@ export function ReviewsPage() {
               <strong>{r.title || 'Untitled'}</strong>
               <br />
               <span style={{ fontSize: 12, opacity: 0.75 }}>
-                {r.user ? `${r.user.firstName} ${r.user.lastName}` : 'User'} · {namedRef(r.cat as { name?: string })} ·{' '}
-                {formatDate(r.createdAt)}
+                {r.user ? `${r.user.firstName} ${r.user.lastName}` : 'User'} ·{' '}
+                {typeof r.listing === 'object' && r.listing?.title
+                  ? r.listing.title
+                  : namedRef((r.listing as { name?: string }) || (r.cat as { name?: string }))}{' '}
+                · {formatDate(r.createdAt)}
               </span>
               <br />
               {r.body}

@@ -1,14 +1,15 @@
 # Complete Folder Structure
 
 ```text
-cat-marketplace/
+cat_ecom/                        # Multi-Livestock Marketplace monorepo
 ├── package.json                 # Workspaces root
 ├── .gitignore
 ├── .nvmrc
 ├── README.md
 ├── .prettierrc
 ├── .prettierignore
-├── .husky/                      # (phase 1 tooling)
+├── render.yaml                  # Render blueprint (API)
+├── .husky/
 │
 ├── docs/
 │   ├── ARCHITECTURE.md
@@ -18,7 +19,9 @@ cat-marketplace/
 │   ├── API_DESIGN.md
 │   ├── AUTH_FLOW.md
 │   ├── SECURITY.md
-│   └── IMPLEMENTATION_PLAN.md
+│   ├── IMPLEMENTATION_PLAN.md
+│   ├── RUNBOOK.md
+│   └── DEPLOYMENT.md
 │
 ├── docker/
 │   ├── Dockerfile.backend
@@ -29,116 +32,108 @@ cat-marketplace/
 │   └── README.md
 │
 ├── shared/
-│   ├── package.json
+│   ├── package.json             # @cat-marketplace/shared
 │   ├── tsconfig.json
 │   └── src/
 │       ├── index.ts
 │       ├── types/
 │       ├── constants/
-│       ├── utils/
-│       └── validators/
+│       └── …
 │
 ├── backend/
-│   ├── package.json
+│   ├── package.json             # @cat-marketplace/backend
 │   ├── tsconfig.json
 │   ├── .env.example
+│   ├── api/                     # Vercel serverless entry (optional)
 │   ├── src/
 │   │   ├── app.ts
 │   │   ├── server.ts
 │   │   ├── config/
-│   │   │   ├── env.ts
+│   │   │   ├── env.ts           # Zod-validated env (no STRIPE_*)
 │   │   │   ├── cors.ts
-│   │   │   ├── database.ts
 │   │   │   ├── cloudinary.ts
-│   │   │   ├── stripe.ts
 │   │   │   └── logger.ts
 │   │   ├── database/
 │   │   │   ├── connection.ts
-│   │   │   └── seed.ts
+│   │   │   ├── seed.ts
+│   │   │   └── seed.cli.ts
 │   │   ├── middlewares/
-│   │   │   ├── authenticate.ts
-│   │   │   ├── authorize.ts
-│   │   │   ├── rateLimiter.ts
 │   │   │   ├── csrf.ts
+│   │   │   ├── rateLimiter.ts
 │   │   │   ├── sanitize.ts
 │   │   │   ├── validateRequest.ts
 │   │   │   ├── requestLogger.ts
 │   │   │   ├── errorHandler.ts
 │   │   │   └── notFound.ts
 │   │   ├── utils/
-│   │   │   ├── AppError.ts
-│   │   │   ├── ApiResponse.ts
-│   │   │   ├── asyncHandler.ts
-│   │   │   ├── token.ts
-│   │   │   ├── password.ts
-│   │   │   └── pagination.ts
 │   │   ├── helpers/
-│   │   ├── constants/
+│   │   ├── constants/           # ROLES, PERMISSIONS, cookies
 │   │   ├── types/
-│   │   ├── interfaces/
-│   │   ├── validators/
-│   │   ├── services/            # Cross-module infra (email, otp)
-│   │   ├── repositories/        # Rare shared repos only
+│   │   ├── services/            # Email / OTP infra
 │   │   ├── routes/
-│   │   │   └── index.ts         # Mounts all module routes
+│   │   │   ├── index.ts         # Mounts all /api/v1 modules
+│   │   │   └── health.route.ts
 │   │   └── modules/
 │   │       ├── auth/
 │   │       ├── user/
-│   │       ├── cat/
-│   │       ├── order/
-│   │       ├── payment/
-│   │       ├── review/
-│   │       ├── breed/
+│   │       ├── role/
+│   │       ├── permission/
 │   │       ├── category/
-│   │       ├── coupon/
+│   │       ├── attribute/
+│   │       ├── breed/
+│   │       ├── listing/         # Dynamic catalog (not per-species schemas)
+│   │       ├── seller/
+│   │       ├── enquiry/
+│   │       ├── homepage/
 │   │       ├── upload/
+│   │       ├── wishlist/
+│   │       ├── coupon/
+│   │       ├── order/
+│   │       ├── payment/         # Manual UPI / verify / refund
+│   │       ├── review/
 │   │       ├── notification/
 │   │       ├── dashboard/
 │   │       ├── cms/
 │   │       ├── banner/
-│   │       ├── settings/
-│   │       ├── activity-log/
-│   │       ├── role/
-│   │       └── permission/
+│   │       ├── settings/        # Includes payment receiver config
+│   │       └── activity-log/
 │   │
-│   │   # Each module:
+│   │   # Typical module layout:
 │   │   #   controller/  service/  repository/  model/
-│   │   #   route/  validator/  interface/  dto/  middleware/
+│   │   #   route/  validator/  interface/  middleware/
 │   │
-│   └── tests/                   # (later)
+│   └── tests/                   # optional
 │
-├── frontend/                    # Next.js 15 (scaffolded in phase 7)
+├── frontend/                    # Next.js 15 storefront (port 3005)
 │   ├── package.json
 │   ├── next.config.ts
-│   ├── tailwind.config.ts
 │   ├── tsconfig.json
 │   ├── .env.example
 │   ├── public/
-│   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx             # Landing
-│   │   ├── about/
-│   │   ├── contact/
-│   │   ├── cats/
-│   │   ├── breeds/
-│   │   ├── categories/
-│   │   ├── cart/
-│   │   ├── checkout/
-│   │   ├── wishlist/
-│   │   ├── auth/
-│   │   ├── profile/
-│   │   ├── orders/
-│   │   └── api/                 # BFF only if needed (prefer direct API)
-│   ├── components/
-│   ├── features/
-│   ├── hooks/
-│   ├── lib/
-│   ├── stores/
-│   ├── schemas/
-│   ├── types/
-│   └── styles/
+│   └── src/
+│       ├── app/
+│       │   ├── layout.tsx
+│       │   ├── page.tsx         # Homepage (CMS-driven sections)
+│       │   ├── animals/         # /animals, /[category], /[slug]
+│       │   ├── cats/ cows/ …    # Category shortcut pages
+│       │   ├── livestock/
+│       │   ├── search/ sell/
+│       │   ├── cart/ checkout/ wishlist/
+│       │   ├── auth/
+│       │   ├── profile/ orders/
+│       │   ├── about/ contact/
+│       │   └── …
+│       ├── components/
+│       │   ├── home/
+│       │   ├── catalog/
+│       │   ├── cart/ checkout/
+│       │   ├── auth/ layout/
+│       │   └── …
+│       ├── lib/api/             # catalog, commerce clients
+│       ├── stores/
+│       └── types/
 │
-└── admin/                       # Vite + React (scaffolded in phase 9)
+└── admin/                       # Vite + React CRM (port 5173)
     ├── package.json
     ├── vite.config.ts
     ├── tsconfig.json
@@ -147,31 +142,33 @@ cat-marketplace/
     └── src/
         ├── main.tsx
         ├── App.tsx
-        ├── app/
+        ├── config/nav.ts
         ├── layouts/
-        ├── pages/
-        ├── features/
+        ├── pages/               # Listings, Attributes, Enquiries, Homepage, Payments, …
+        ├── lib/api/
         ├── components/
         ├── hooks/
-        ├── services/
-        ├── schemas/
         ├── theme/
         └── types/
 ```
 
 ## Module contract (backend)
 
-Every feature module exposes:
-
-| Layer                 | Responsibility                            |
-| --------------------- | ----------------------------------------- |
-| `route/`              | Wire path + middleware chain + controller |
-| `validator/`          | express-validator chains                  |
-| `middleware/`         | Module-specific guards (optional)         |
-| `controller/`         | HTTP adapter                              |
-| `dto/` / `interface/` | Request/response shapes                   |
-| `service/`            | Domain logic                              |
-| `repository/`         | Persistence                               |
-| `model/`              | Mongoose schema                           |
+| Layer         | Responsibility                       |
+| ------------- | ------------------------------------ |
+| `route/`      | Path + middleware chain + controller |
+| `validator/`  | express-validator chains             |
+| `middleware/` | Module-specific guards (optional)    |
+| `controller/` | HTTP adapter                         |
+| `interface/`  | Request/response / document shapes   |
+| `service/`    | Domain logic                         |
+| `repository/` | Persistence                          |
+| `model/`      | Mongoose schema                      |
 
 No controller imports Mongoose models directly.
+
+## API mount points
+
+All modules mount under `API_PREFIX` (default `/api/v1`) via `backend/src/routes/index.ts`:
+
+`/health`, `/auth`, `/users`, `/profile`, `/categories`, `/breeds`, `/listings`, `/attributes`, `/sellers`, `/enquiries`, `/homepage`, `/uploads`, `/wishlist`, `/coupons`, `/orders`, `/payments`, `/reviews`, `/notifications`, `/settings`, `/cms`, `/banners`, `/activity-logs`, `/dashboard`.

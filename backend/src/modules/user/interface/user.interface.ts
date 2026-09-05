@@ -34,7 +34,6 @@ export interface IUser {
   lockUntil?: Date;
   status: UserStatus;
   addresses: IUserAddress[];
-  stripeCustomerId?: string;
   lastLoginAt?: Date;
   lastLoginIp?: string;
   createdAt: Date;

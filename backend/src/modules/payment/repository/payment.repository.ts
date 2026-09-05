@@ -9,23 +9,21 @@ export class PaymentRepository {
   }
 
   async findById(id: string): Promise<PaymentDocument | null> {
-    return PaymentModel.findById(id).populate('order').exec();
+    return PaymentModel.findById(id).populate('order listing user seller').exec();
   }
 
   async findByOrder(orderId: string): Promise<PaymentDocument | null> {
     return PaymentModel.findOne({ order: orderId }).sort({ createdAt: -1 }).exec();
   }
 
-  async findByCheckoutSession(sessionId: string): Promise<PaymentDocument | null> {
-    return PaymentModel.findOne({ stripeCheckoutSessionId: sessionId }).exec();
-  }
-
-  async findByPaymentIntent(intentId: string): Promise<PaymentDocument | null> {
-    return PaymentModel.findOne({ stripePaymentIntentId: intentId }).exec();
-  }
-
   async save(payment: PaymentDocument): Promise<PaymentDocument> {
     return payment.save();
+  }
+
+  async updateById(id: string, data: Partial<IPayment>): Promise<PaymentDocument | null> {
+    return PaymentModel.findByIdAndUpdate(id, { $set: data }, { new: true })
+      .populate('order listing user seller')
+      .exec();
   }
 
   async listForUser(userId: string, query: Record<string, unknown>) {
@@ -43,7 +41,12 @@ export class PaymentRepository {
     const filter: FilterQuery<IPayment> = {};
     if (typeof query.status === 'string') filter.status = query.status as IPayment['status'];
     const [items, total] = await Promise.all([
-      PaymentModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).populate('order user').exec(),
+      PaymentModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('order listing user seller')
+        .exec(),
       PaymentModel.countDocuments(filter).exec(),
     ]);
     return { items, meta: buildPaginationMeta(page, limit, total) };

@@ -23,7 +23,13 @@ export type PaymentAdmin = {
   currency: string;
   status: string;
   provider?: string;
+  method?: string;
+  transactionId?: string;
+  utr?: string;
+  adminNotes?: string;
+  rejectedReason?: string;
   order?: { orderNumber?: string; _id?: string } | string;
+  listing?: { title?: string; _id?: string } | string;
   user?: { email?: string } | string;
   createdAt: string;
 };
@@ -46,8 +52,22 @@ export type ReviewAdmin = {
   title?: string;
   body?: string;
   status: string;
+  listing?: string | { title?: string; name?: string };
   cat?: string | { name?: string };
   user?: { firstName?: string; lastName?: string };
+  createdAt: string;
+};
+
+export type EnquiryAdmin = {
+  _id: string;
+  message: string;
+  contactMethod: string;
+  status: string;
+  buyerName?: string;
+  buyerPhone?: string;
+  buyerEmail?: string;
+  listingId?: { _id?: string; title?: string } | string;
+  sellerId?: { _id?: string; email?: string; firstName?: string } | string;
   createdAt: string;
 };
 
@@ -61,8 +81,12 @@ export const commerceApi = {
 
   listPayments: (params?: Record<string, unknown>) =>
     apiGet<{ payments: PaymentAdmin[] }>('/payments', params),
-  refund: (id: string, body?: { amount?: number; reason?: string }) =>
-    apiMutate<{ payment: PaymentAdmin }>('post', `/payments/${id}/refund`, body),
+  verifyPayment: (
+    id: string,
+    body: { status: 'verified' | 'rejected'; adminNotes?: string; rejectedReason?: string },
+  ) => apiMutate<{ payment: PaymentAdmin }>('patch', `/payments/${id}/verify`, body),
+  refund: (id: string, body?: { reason?: string }) =>
+    apiMutate<{ payment: PaymentAdmin }>('patch', `/payments/${id}/refund`, body),
 
   listCoupons: (params?: Record<string, unknown>) =>
     apiGet<{ coupons: CouponAdmin[] }>('/coupons', params),
@@ -77,4 +101,9 @@ export const commerceApi = {
   setReviewStatus: (id: string, status: string) =>
     apiMutate<{ review: ReviewAdmin }>('patch', `/reviews/${id}/status`, { status }),
   deleteReview: (id: string) => apiMutate<null>('delete', `/reviews/${id}`),
+
+  listEnquiries: (params?: Record<string, unknown>) =>
+    apiGet<{ enquiries: EnquiryAdmin[] }>('/enquiries', params),
+  setEnquiryStatus: (id: string, status: string) =>
+    apiMutate<{ enquiry: EnquiryAdmin }>('patch', `/enquiries/${id}/status`, { status }),
 };

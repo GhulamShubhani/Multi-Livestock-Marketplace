@@ -14,9 +14,13 @@ export const authApi = {
   }) => apiMutate<{ user: PublicUser }>('post', '/auth/register', body),
   refresh: () => apiMutate<{ user: PublicUser }>('post', '/auth/refresh'),
   logout: () => apiMutate<null>('post', '/auth/logout'),
-  verifyEmail: (token: string) => apiMutate<{ user: PublicUser }>('post', '/auth/verify-email', { token }),
+  verifyEmail: (token: string) =>
+    apiMutate<{ user: PublicUser }>('post', '/auth/verify-email', { token }),
   resendVerification: (email: string) =>
     apiMutate<null>('post', '/auth/resend-verification', { email }),
+  sendOtp: (email: string) => apiMutate<null>('post', '/auth/otp/send', { email }),
+  verifyOtp: (email: string, otp: string) =>
+    apiMutate<{ verified: true }>('post', '/auth/otp/verify', { email, otp }),
   forgotPassword: (email: string) => apiMutate<null>('post', '/auth/forgot-password', { email }),
   resetPassword: (token: string, password: string) =>
     apiMutate<null>('post', '/auth/reset-password', { token, password }),

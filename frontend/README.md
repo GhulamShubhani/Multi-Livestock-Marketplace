@@ -1,6 +1,6 @@
-# Frontend (Customer Website)
+# Frontend — Multi-Livestock Marketplace Storefront
 
-Next.js 15 App Router storefront for Cat Marketplace.
+Next.js 15 App Router storefront for the Multi-Livestock Marketplace.
 
 ## Stack
 
@@ -8,9 +8,9 @@ Next.js 15 App Router storefront for Cat Marketplace.
 - Tailwind CSS v4
 - Material UI
 - TanStack Query + Axios
-- Zustand (cart / wishlist / auth / UI)
+- Zustand (cart / wishlist / UI)
 - Framer Motion
-- next-themes (dark mode)
+- next-themes
 
 ## Run
 
@@ -22,17 +22,21 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-App: http://localhost:3000  
-API: `NEXT_PUBLIC_API_URL` (default `http://localhost:5000/api/v1`)
+App: http://localhost:3005  
+API: mode switch via `NEXT_PUBLIC_API_MODE` / `NEXT_PUBLIC_API_*` (see `.env.example`)
 
 ## Routes
 
-| Path | Notes |
-|------|-------|
-| `/` | Hero + featured cats |
-| `/cats`, `/cats/[slug]` | Catalog + detail |
-| `/auth/*` | Login, register, forgot/reset, verify |
-| `/cart`, `/wishlist`, `/checkout` | Commerce |
-| `/profile`, `/orders/[id]` | Account |
+| Path                                                                       | Notes                                   |
+| -------------------------------------------------------------------------- | --------------------------------------- |
+| `/`                                                                        | Homepage (CMS sections + category grid) |
+| `/animals`, `/animals/[category]`, `/animals/[category]/[slug]`            | Catalog + detail                        |
+| `/cats`, `/cows`, `/buffaloes`, `/bulls`, `/goats`, `/khassi`, `/chickens` | Category shortcuts                      |
+| `/livestock`                                                               | Livestock browse                        |
+| `/search`, `/sell`                                                         | Search + sell CTA                       |
+| `/auth/*`                                                                  | Login, register, forgot/reset, verify   |
+| `/cart`, `/wishlist`, `/checkout`                                          | Commerce (UPI payment proof)            |
+| `/profile`, `/orders/[id]`                                                 | Account                                 |
+| `/about`, `/contact`                                                       | Static / contact                        |
 
-Checkout requires a verified email. Dev mock payment is available on the checkout page.
+Checkout creates an order, loads `GET /payments/methods`, then submits proof via `POST /payments/submit`. No Stripe client SDK.

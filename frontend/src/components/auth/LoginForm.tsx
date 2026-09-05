@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '@/stores/auth';
+import { PasswordField } from '@/components/auth/PasswordField';
 
 const schema = z.object({
   email: z.email(),
@@ -30,8 +31,15 @@ export function LoginForm() {
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
     try {
-      await login(values.email, values.password);
-      router.push(search.get('next') || '/profile');
+      const user = await login(values.email, values.password);
+      const next = search.get('next') || '/profile';
+      if (!user.isEmailVerified) {
+        router.push(
+          `/auth/verify-email?pending=1&email=${encodeURIComponent(values.email)}&next=${encodeURIComponent(next)}`,
+        );
+        return;
+      }
+      router.push(next);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Login failed');
     }
@@ -62,9 +70,8 @@ export function LoginForm() {
           helperText={errors.email?.message}
           {...register('email')}
         />
-        <TextField
+        <PasswordField
           label="Password"
-          type="password"
           autoComplete="current-password"
           error={Boolean(errors.password)}
           helperText={errors.password?.message}
