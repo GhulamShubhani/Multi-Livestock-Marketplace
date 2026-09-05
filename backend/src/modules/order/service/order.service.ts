@@ -4,18 +4,15 @@ import { env } from '../../../config/env';
 import { AppError } from '../../../utils/AppError';
 import { refId } from '../../../utils/refId';
 import { activityLogService } from '../../activity-log/service/activity-log.service';
-import { catRepository } from '../../cat/repository/cat.repository';
+import { listingRepository } from '../../listing/repository/listing.repository';
 import { couponService } from '../../coupon/service/coupon.service';
 import { couponRepository } from '../../coupon/repository/coupon.repository';
+import { paymentRepository } from '../../payment/repository/payment.repository';
 import { orderRepository } from '../repository/order.repository';
-import type {
-  IOrderAddress,
-  IOrderItem,
-  OrderStatus,
-} from '../interface/order.interface';
+import type { IOrderAddress, IOrderItem, OrderStatus } from '../interface/order.interface';
 
 export interface CreateOrderItemInput {
-  catId: string;
+  listingId: string;
   quantity: number;
 }
 
@@ -30,7 +27,7 @@ export interface CreateOrderInput {
 function generateOrderNumber(): string {
   const stamp = Date.now().toString(36).toUpperCase();
   const rand = randomBytes(3).toString('hex').toUpperCase();
-  return `CAT-${stamp}-${rand}`;
+  return `LST-${stamp}-${rand}`;
 }
 
 export class OrderService {
@@ -40,7 +37,7 @@ export class OrderService {
     }
 
     const lineItems: IOrderItem[] = [];
-    const catIds: string[] = [];
+    const listingIds: string[] = [];
     const categoryIds: string[] = [];
 
     for (const item of dto.items) {
@@ -48,34 +45,35 @@ export class OrderService {
         throw AppError.badRequest('Invalid quantity');
       }
 
-      const cat = await catRepository.findById(item.catId);
-      if (!cat || cat.status !== 'available') {
-        throw AppError.badRequest(`Cat unavailable: ${item.catId}`);
-      }
-      if (cat.stock < item.quantity) {
-        throw AppError.badRequest(`Insufficient stock for ${cat.name}`);
+      const listing = await listingRepository.findById(item.listingId);
+      if (!listing || listing.availabilityStatus !== 'available' || !listing.isActive) {
+        throw AppError.badRequest(`Listing unavailable: ${item.listingId}`);
       }
 
-      // unique pets: prevent duplicate cat in same order
-      if (catIds.includes(String(cat._id))) {
-        throw AppError.badRequest('Duplicate cat in order');
+      if (listingIds.includes(String(listing._id))) {
+        throw AppError.badRequest('Duplicate listing in order');
       }
 
-      const unitPrice = cat.price;
+      if (item.quantity > 1) {
+        throw AppError.badRequest('Livestock listings are unique — quantity must be 1');
+      }
+
+      const unitPrice = listing.price;
       const lineTotal = unitPrice * item.quantity;
-      const primaryImage = cat.images?.find((i) => i.isPrimary)?.url ?? cat.images?.[0]?.url;
+      const primaryImage =
+        listing.images?.find((i) => i.isPrimary)?.url ?? listing.images?.[0]?.url;
 
       lineItems.push({
-        cat: cat._id as Types.ObjectId,
-        name: cat.name,
-        sku: cat.sku,
+        listing: listing._id as Types.ObjectId,
+        name: listing.title,
+        sku: listing.listingId,
         image: primaryImage,
         unitPrice,
         quantity: item.quantity,
         lineTotal,
       });
-      catIds.push(String(cat._id));
-      categoryIds.push(String(cat.category));
+      listingIds.push(String(listing._id));
+      categoryIds.push(String(listing.category));
     }
 
     const subtotal = lineItems.reduce((sum, i) => sum + i.lineTotal, 0);
@@ -87,7 +85,7 @@ export class OrderService {
       const validated = await couponService.validateForOrder(
         dto.couponCode,
         subtotal,
-        catIds,
+        listingIds,
         categoryIds,
       );
       discount = validated.discount;
@@ -119,20 +117,25 @@ export class OrderService {
       notes: dto.notes,
     });
 
-    // Reserve stock
     for (const item of dto.items) {
-      const cat = await catRepository.findById(item.catId);
-      if (!cat) continue;
-      const nextStock = cat.stock - item.quantity;
-      await catRepository.updateById(String(cat._id), {
-        stock: nextStock,
-        status: nextStock <= 0 ? 'reserved' : cat.status,
+      await listingRepository.updateById(item.listingId, {
+        availabilityStatus: 'reserved',
       });
     }
 
     if (couponId) {
       await couponRepository.incrementUsed(String(couponId));
     }
+
+    await paymentRepository.create({
+      order: order._id as Types.ObjectId,
+      user: new Types.ObjectId(userId),
+      provider: 'upi',
+      amount: order.total,
+      currency: order.currency,
+      status: 'pending',
+      ip,
+    });
 
     await activityLogService.log({
       actor: userId,
@@ -201,15 +204,14 @@ export class OrderService {
     order.cancelledAt = new Date();
     await orderRepository.save(order);
 
-    // Restock
     for (const item of order.items) {
-      const cat = await catRepository.findById(refId(item.cat));
-      if (!cat) continue;
-      const nextStock = cat.stock + item.quantity;
-      await catRepository.updateById(String(cat._id), {
-        stock: nextStock,
-        status: cat.status === 'reserved' || cat.status === 'sold' ? 'available' : cat.status,
-      });
+      const listing = await listingRepository.findById(refId(item.listing));
+      if (!listing) continue;
+      if (listing.availabilityStatus === 'reserved') {
+        await listingRepository.updateById(String(listing._id), {
+          availabilityStatus: 'available',
+        });
+      }
     }
 
     await activityLogService.log({
@@ -233,11 +235,9 @@ export class OrderService {
     await orderRepository.save(order);
 
     for (const item of order.items) {
-      const cat = await catRepository.findById(refId(item.cat));
-      if (!cat) continue;
-      if (cat.stock <= 0 || cat.status === 'reserved') {
-        await catRepository.updateById(String(cat._id), { status: 'sold' });
-      }
+      await listingRepository.updateById(refId(item.listing), {
+        availabilityStatus: 'sold',
+      });
     }
 
     return order;

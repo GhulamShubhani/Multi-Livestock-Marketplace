@@ -1,17 +1,9 @@
-import type { Metadata } from 'next';
-import { CatDetail } from '@/components/catalog/CatDetail';
+import { redirect } from 'next/navigation';
 
 type Props = { params: Promise<{ slug: string }> };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+/** Legacy URL compatibility — also covered by next.config redirects. */
+export default async function LegacyCatDetailPage({ params }: Props) {
   const { slug } = await params;
-  return {
-    title: slug.replace(/-/g, ' '),
-    description: `Meet ${slug.replace(/-/g, ' ')} on Cat Marketplace.`,
-  };
-}
-
-export default async function CatDetailPage({ params }: Props) {
-  const { slug } = await params;
-  return <CatDetail slug={slug} />;
+  redirect(`/animals/cats/${slug}`);
 }

@@ -1,30 +1,40 @@
-# Database Schema (MongoDB Atlas)
+# Database Schema (MongoDB)
 
-All money fields stored as **integer cents** (or decimal128) to avoid float errors. Prefer `Number` cents + currency code.
+Default database name: **`livestock_marketplace`**.
+
+> **Migration note:** Older local Docker Compose used `cat_marketplace`. Prefer `livestock_marketplace`. If you still have a volume named `cat_mongo_data`, either migrate data or start fresh; compose now uses `livestock_mongo_data`.
+
+Money fields are stored as **integer minor units** (paise for INR) plus a currency code (`DEFAULT_CURRENCY=INR`).
 
 ---
 
 ## Collections Overview
 
-| Collection | Purpose |
-|------------|---------|
-| `users` | Accounts (all roles) |
-| `roles` | Role definitions |
-| `permissions` | Permission catalog |
-| `refresh_tokens` | Rotating refresh sessions |
-| `cats` | Catalog listings |
-| `breeds` | Breed taxonomy |
-| `categories` | Category taxonomy |
-| `orders` | Customer orders |
-| `payments` | Payment records |
-| `reviews` | Product reviews |
-| `coupons` | Discount codes |
-| `notifications` | In-app notifications |
-| `activity_logs` | Audit trail |
-| `settings` | App/site settings (singleton / keyed) |
-| `cms_pages` | CMS content |
-| `banners` | Marketing banners |
-| `wishlists` | Per-user wishlist (or embed on user) |
+| Collection         | Purpose                                  |
+| ------------------ | ---------------------------------------- |
+| `users`            | Accounts (all roles)                     |
+| `roles`            | Role definitions                         |
+| `permissions`      | Permission catalog                       |
+| `refresh_tokens`   | Rotating refresh sessions                |
+| `categories`       | Animal / product taxonomy                |
+| `attributes`       | Dynamic fields per category              |
+| `breeds`           | Breed taxonomy (linked to categories)    |
+| `listings`         | All livestock listings (dynamic catalog) |
+| `sellers`          | Seller profiles                          |
+| `enquiries`        | Buyer ↔ seller interest / contact        |
+| `orders`           | Customer orders                          |
+| `payments`         | Manual UPI / bank / COD / mobile proofs  |
+| `reviews`          | Listing reviews                          |
+| `coupons`          | Discount codes                           |
+| `wishlists`        | Per-user wishlist                        |
+| `notifications`    | In-app notifications                     |
+| `activity_logs`    | Audit trail                              |
+| `settings`         | Keyed config (incl. `payment`)           |
+| `cms_pages`        | CMS content                              |
+| `banners`          | Marketing banners                        |
+| `homepageSections` | Homepage CMS sections                    |
+
+There is **no** `cats` collection and **no** Stripe payment-intent fields.
 
 ---
 
@@ -40,7 +50,7 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
   phone?: string,
   avatar?: { url, publicId },
   role: ObjectId,             // ref roles
-  permissionsOverride?: string[], // optional grants/denies
+  permissionsOverride: string[],
   isEmailVerified: boolean,
   emailVerificationTokenHash?: string,
   emailVerificationExpires?: Date,
@@ -52,10 +62,9 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
   failedLoginAttempts: number,
   lockUntil?: Date,
   status: 'active' | 'inactive' | 'banned' | 'pending',
-  addresses?: [{
+  addresses: [{
     label, line1, line2, city, state, postalCode, country, isDefault
   }],
-  stripeCustomerId?: string,
   lastLoginAt?: Date,
   lastLoginIp?: string,
   createdAt, updatedAt
@@ -71,11 +80,12 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 ```ts
 {
   _id: ObjectId,
-  name: 'super_admin' | 'admin' | 'manager' | 'staff' | 'customer',
+  name: 'super_admin' | 'admin' | 'manager' | 'staff'
+       | 'seller' | 'buyer' | 'customer',  // customer = legacy buyer
   displayName: string,
   description?: string,
-  permissions: ObjectId[],    // ref permissions
-  isSystem: boolean,          // cannot delete system roles
+  permissions: ObjectId[],
+  isSystem: boolean,
   createdAt, updatedAt
 }
 ```
@@ -89,15 +99,17 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 ```ts
 {
   _id: ObjectId,
-  key: string,                // e.g. 'cats:create', 'orders:refund'
-  module: string,             // 'cats' | 'orders' | ...
-  action: string,             // 'create' | 'read' | 'update' | 'delete' | 'export'
+  key: string,     // e.g. 'listings:create', 'payments:verify'
+  module: string,
+  action: string,
   description?: string,
   createdAt, updatedAt
 }
 ```
 
 **Indexes:** `key` unique, `module`
+
+Notable keys: `listings:*`, `listings:verify`, `attributes:*`, `enquiries:*`, `sellers:*`, `homepage:*`, `payments:read|verify|refund`, plus users/orders/cms/settings/dashboard/reports/activity_logs.
 
 ---
 
@@ -107,8 +119,8 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 {
   _id: ObjectId,
   user: ObjectId,
-  tokenHash: string,          // never store raw refresh token
-  familyId: string,           // rotation family — reuse detection
+  tokenHash: string,
+  familyId: string,
   userAgent?: string,
   ip?: string,
   expiresAt: Date,
@@ -128,10 +140,14 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 {
   _id: ObjectId,
   name: string,
-  slug: string,               // unique
+  slug: string,
   description?: string,
   image?: { url, publicId },
-  parent?: ObjectId,          // nested categories optional
+  icon?: string,
+  group?: string,
+  parent?: ObjectId,
+  listingCount: number,
+  attributes: ObjectId[],     // attribute defs linked to this category
   isActive: boolean,
   sortOrder: number,
   seo?: { title, description, keywords },
@@ -143,7 +159,35 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 
 ---
 
-## 6. breeds
+## 6. attributes
+
+```ts
+{
+  _id: ObjectId,
+  name: string,
+  slug: string,
+  key: string,                // stable machine key
+  label: string,
+  type: 'text' | 'number' | 'decimal' | 'boolean' | 'date'
+      | 'select' | 'multiselect' | 'radio' | 'textarea'
+      | 'yes_no' | 'image',
+  unit?: string,
+  options?: string[],
+  required: boolean,
+  categoryIds: ObjectId[],
+  sortOrder: number,
+  isActive: boolean,
+  filterable: boolean,
+  showOnCard: boolean,
+  createdAt, updatedAt
+}
+```
+
+**Indexes:** `key` unique, `slug`, `categoryIds`, `isActive`
+
+---
+
+## 7. breeds
 
 ```ts
 {
@@ -154,6 +198,7 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
   origin?: string,
   temperament?: string[],
   lifeSpan?: string,
+  categoryIds: ObjectId[],
   image?: { url, publicId },
   isActive: boolean,
   seo?: { title, description, keywords },
@@ -161,36 +206,46 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 }
 ```
 
-**Indexes:** `slug` unique, `name`
+**Indexes:** `slug` unique, `name`, `categoryIds`
 
 ---
 
-## 7. cats
+## 8. listings
 
 ```ts
 {
   _id: ObjectId,
-  name: string,
+  title: string,
   slug: string,
-  sku?: string,
+  listingId: string,          // human-readable id
   description: string,
   shortDescription?: string,
-  breed: ObjectId,
   category: ObjectId,
-  ageMonths: number,
+  subcategory?: ObjectId,
+  breed?: ObjectId,
+  price: number,              // minor units
+  negotiable: boolean,
+  currency: string,           // default INR
+  seller: ObjectId,
+  sellerMobile?: string,
+  sellerWhatsApp?: string,
+  location: {
+    country, state, district?, city, village?, area?, pincode?,
+    latitude?, longitude?
+  },
+  images: [{ url, publicId, isPrimary?, alt? }],
+  videos: [{ url, publicId?, … }],
+  ageMonths?: number,
   gender: 'male' | 'female' | 'unknown',
-  color?: string,
-  price: number,              // cents
-  compareAtPrice?: number,
-  currency: 'USD' | 'INR' | ...,
-  stock: number,              // 0/1 for unique pets, or quantity
-  status: 'draft' | 'available' | 'reserved' | 'sold' | 'archived',
-  images: [{ url, publicId, isPrimary, alt }],
-  attributes?: Record<string, string>,
-  vaccinated: boolean,
-  neutered: boolean,
-  pedigree: boolean,
+  weight?: number,
+  healthStatus?: string,
+  vaccinationStatus?: string,
+  availabilityStatus: 'draft' | 'available' | 'reserved' | 'sold' | 'archived',
+  verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected',
   featured: boolean,
+  premium: boolean,
+  isActive: boolean,
+  attributes?: Record<string, unknown>,  // key → value from attribute defs
   averageRating: number,
   reviewCount: number,
   seo?: { title, description, keywords },
@@ -200,36 +255,75 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 }
 ```
 
-**Indexes:** `slug` unique, `breed`, `category`, `status`, `price`, `featured`, text index on `name description`
+**Indexes:** `slug` unique, `listingId`, `category`, `breed`, `seller`, `availabilityStatus`, `featured`, text on title/description
 
 ---
 
-## 8. orders
+## 9. sellers
 
 ```ts
 {
   _id: ObjectId,
-  orderNumber: string,        // human-readable unique
+  userId: ObjectId,
+  businessName: string,
+  sellerType: 'individual' | 'farmer' | 'breeder' | 'farm' | 'dealer' | 'business',
+  yearsOfExperience?: number,
+  verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected',
+  whatsapp?: string,
+  phone?: string,
+  address?: { line1, line2, village, city, district, state, pincode, country },
+  bio?: string,
+  isActive: boolean,
+  createdAt, updatedAt
+}
+```
+
+**Indexes:** `userId`, `verificationStatus`, `isActive`
+
+---
+
+## 10. enquiries
+
+```ts
+{
+  _id: ObjectId,
+  buyerId?: ObjectId,
+  sellerId: ObjectId,
+  listingId: ObjectId,
+  message: string,
+  contactMethod: 'call' | 'whatsapp' | 'enquiry' | 'view_mobile',
+  buyerName?: string,
+  buyerPhone?: string,
+  buyerEmail?: string,
+  status: 'new' | 'contacted' | 'interested' | 'negotiating' | 'sold' | 'closed',
+  createdAt, updatedAt
+}
+```
+
+**Indexes:** `listingId`, `sellerId`, `buyerId`, `status`, `createdAt`
+
+---
+
+## 11. orders
+
+```ts
+{
+  _id: ObjectId,
+  orderNumber: string,
   user: ObjectId,
   items: [{
-    cat: ObjectId,
-    name, sku, image,
-    unitPrice: number,
-    quantity: number,
-    lineTotal: number
+    listing: ObjectId,
+    name, sku?, image?,
+    unitPrice, quantity, lineTotal
   }],
-  subtotal: number,
-  discount: number,
-  tax: number,
-  shipping: number,
-  total: number,
+  subtotal, discount, tax, shipping, total: number,
   currency: string,
   coupon?: ObjectId,
   couponCode?: string,
   status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded',
   paymentStatus: 'unpaid' | 'paid' | 'failed' | 'refunded' | 'partially_refunded',
-  shippingAddress: { ... },
-  billingAddress?: { ... },
+  shippingAddress: { … },
+  billingAddress?: { … },
   notes?: string,
   paidAt?: Date,
   cancelledAt?: Date,
@@ -241,43 +335,46 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 
 ---
 
-## 9. payments
+## 12. payments
 
 ```ts
 {
   _id: ObjectId,
-  order: ObjectId,
+  order?: ObjectId,
+  listing?: ObjectId,
   user: ObjectId,
-  provider: 'stripe',
-  stripePaymentIntentId?: string,
-  stripeCheckoutSessionId?: string,
-  stripeInvoiceId?: string,
+  seller?: ObjectId,
+  provider: 'upi' | 'bank_transfer' | 'cod' | 'mobile',
   amount: number,
   currency: string,
-  status: 'pending' | 'succeeded' | 'failed' | 'refunded' | 'partially_refunded',
+  status: 'pending' | 'submitted' | 'under_verification'
+        | 'verified' | 'rejected' | 'refunded',
   method?: string,
-  receiptUrl?: string,
-  refunds?: [{
-    stripeRefundId, amount, reason, createdAt
-  }],
-  rawEvents?: ObjectId[],     // optional refs to webhook log
+  transactionId?: string,
+  utr?: string,
+  paymentDate?: Date,
+  screenshot?: { url, publicId },
+  adminNotes?: string,
+  verifiedBy?: ObjectId,
+  verifiedAt?: Date,
+  rejectedReason?: string,
   ip?: string,
   createdAt, updatedAt
 }
 ```
 
-**Indexes:** `order`, `stripePaymentIntentId` unique sparse, `status`
+**Indexes:** `order`, `user`, `status`, `utr`, `createdAt`
 
 ---
 
-## 10. reviews
+## 13. reviews
 
 ```ts
 {
   _id: ObjectId,
-  cat: ObjectId,
+  listing: ObjectId,
   user: ObjectId,
-  order?: ObjectId,           // verified purchase
+  order?: ObjectId,
   rating: number,             // 1-5
   title?: string,
   body?: string,
@@ -286,16 +383,16 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 }
 ```
 
-**Indexes:** unique `{ cat, user }`, `status`, `rating`
+**Indexes:** unique `{ listing, user }`, `status`, `rating`
 
 ---
 
-## 11. coupons
+## 14. coupons
 
 ```ts
 {
   _id: ObjectId,
-  code: string,               // uppercase unique
+  code: string,
   type: 'percent' | 'fixed',
   value: number,
   minOrderAmount?: number,
@@ -307,7 +404,7 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
   endsAt?: Date,
   isActive: boolean,
   applicableCategories?: ObjectId[],
-  applicableCats?: ObjectId[],
+  applicableListings?: ObjectId[],
   createdAt, updatedAt
 }
 ```
@@ -316,7 +413,20 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 
 ---
 
-## 12. notifications
+## 15. wishlists
+
+```ts
+{
+  _id: ObjectId,
+  user: ObjectId,             // unique
+  items: [{ listing: ObjectId, addedAt: Date }],
+  createdAt, updatedAt
+}
+```
+
+---
+
+## 16. notifications
 
 ```ts
 {
@@ -337,14 +447,14 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 
 ---
 
-## 13. activity_logs
+## 17. activity_logs
 
 ```ts
 {
   _id: ObjectId,
   actor?: ObjectId,
   actorEmail?: string,
-  action: string,             // 'user.login', 'order.refund'
+  action: string,             // e.g. 'payments.submit', 'payments.verify'
   module: string,
   resourceType?: string,
   resourceId?: ObjectId,
@@ -356,32 +466,42 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 }
 ```
 
-**Indexes:** `actor`, `action`, `createdAt`, TTL optional (e. for 180 days)
-
 ---
 
-## 14. settings
+## 18. settings
 
 ```ts
 {
   _id: ObjectId,
-  key: string,                // unique e.g. 'general', 'payments', 'seo'
+  key: string,                // 'general' | 'seo' | 'storefront' | 'payment' | …
   value: object,
   updatedBy?: ObjectId,
-  updatedAt, createdAt
+  createdAt, updatedAt
 }
 ```
 
+### `payment` settings value (public via `GET /payments/methods`)
+
+```ts
+{
+  receiverName?, mobile?, upiId?, qrCode?,  // qrCode = media URL/asset
+  bankName?, accountHolder?, accountNumber?, ifsc?,
+  instructions?
+}
+```
+
+Public settings keys include: `general`, `seo`, `storefront`, `payment`.
+
 ---
 
-## 15. cms_pages
+## 19. cms_pages
 
 ```ts
 {
   _id: ObjectId,
   title: string,
   slug: string,
-  content: string,            // sanitized HTML/Markdown
+  content: string,
   status: 'draft' | 'published',
   seo?: { title, description },
   publishedAt?: Date,
@@ -390,11 +510,9 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 }
 ```
 
-**Indexes:** `slug` unique, `status`
-
 ---
 
-## 16. banners
+## 20. banners
 
 ```ts
 {
@@ -402,7 +520,7 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
   title: string,
   image: { url, publicId },
   linkUrl?: string,
-  placement: 'home_hero' | 'home_secondary' | 'sidebar',
+  placement: string,
   sortOrder: number,
   isActive: boolean,
   startsAt?: Date,
@@ -413,16 +531,28 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 
 ---
 
-## 17. wishlists
+## 21. homepageSections
 
 ```ts
 {
   _id: ObjectId,
-  user: ObjectId,             // unique
-  items: [{ cat: ObjectId, addedAt: Date }],
-  updatedAt, createdAt
+  key: string,
+  type: 'hero' | 'categories' | 'carousel' | 'promo' | 'info' | 'banner' | 'cta',
+  title?: string,
+  subtitle?: string,
+  description?: string,
+  image?: { url, publicId },
+  ctaText?: string,
+  ctaUrl?: string,
+  category?: ObjectId,
+  displayOrder: number,
+  isActive: boolean,
+  config?: Record<string, unknown>,
+  createdAt, updatedAt
 }
 ```
+
+**Indexes:** `key`, `type`, `displayOrder`, `isActive`
 
 ---
 
@@ -430,15 +560,21 @@ All money fields stored as **integer cents** (or decimal128) to avoid float erro
 
 ```text
 User ──role──► Role ──► Permissions
-User ──► Orders ──► Payments
-User ──► Reviews ──► Cat
-Cat ──► Breed, Category
-Order items ──► Cat
-Coupon ── used by ──► Order
+User ──► Seller profile
+Category ──► Attributes
+Listing ──► Category, Breed?, Seller, attributes map
+Enquiry ──► Listing, Seller, Buyer?
+Order items ──► Listing
+Payment ──► Order, User (manual proof)
+Review / Wishlist ──► Listing
+HomepageSection / Banner / CMS ── content
+Settings(payment) ──► public payment methods
 ```
 
-## Seed data (phase 2–3)
+## Seed data
 
-- System roles + full permission matrix
-- Super Admin user (from env)
-- Default settings, sample categories/breeds (optional)
+On boot (`SEED_ON_BOOT=true`) or `npm run seed --workspace=@cat-marketplace/backend`:
+
+- System roles + full permission matrix (incl. seller / buyer)
+- Super admin from `SUPER_ADMIN_EMAIL` / `SUPER_ADMIN_PASSWORD`
+- Default categories, breeds, attributes, homepage sections, settings (incl. payment placeholder)

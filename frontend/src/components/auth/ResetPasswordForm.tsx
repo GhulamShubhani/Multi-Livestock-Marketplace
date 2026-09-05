@@ -3,22 +3,23 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Stack, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { authApi } from '@/lib/api/auth';
 import { getApiErrorMessage } from '@/lib/api/client';
+import { PasswordField } from '@/components/auth/PasswordField';
 
 const schema = z
   .object({
     password: z
       .string()
-      .min(12)
-      .regex(/[A-Z]/)
-      .regex(/[a-z]/)
-      .regex(/[0-9]/)
-      .regex(/[^A-Za-z0-9]/),
+      .min(12, 'At least 12 characters')
+      .regex(/[A-Z]/, 'Include an uppercase letter')
+      .regex(/[a-z]/, 'Include a lowercase letter')
+      .regex(/[0-9]/, 'Include a number')
+      .regex(/[^A-Za-z0-9]/, 'Include a symbol'),
     confirmPassword: z.string(),
   })
   .refine((v) => v.password === v.confirmPassword, {
@@ -67,16 +68,16 @@ export function ResetPasswordForm() {
         </Alert>
       ) : null}
       <Stack spacing={2}>
-        <TextField
+        <PasswordField
           label="New password"
-          type="password"
+          autoComplete="new-password"
           error={Boolean(errors.password)}
           helperText={errors.password?.message}
           {...register('password')}
         />
-        <TextField
+        <PasswordField
           label="Confirm password"
-          type="password"
+          autoComplete="new-password"
           error={Boolean(errors.confirmPassword)}
           helperText={errors.confirmPassword?.message}
           {...register('confirmPassword')}

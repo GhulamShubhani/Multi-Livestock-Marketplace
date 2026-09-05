@@ -9,7 +9,7 @@ export class OrderRepository {
   }
 
   async findById(id: string): Promise<OrderDocument | null> {
-    return OrderModel.findById(id).populate('items.cat').exec();
+    return OrderModel.findById(id).populate('items.listing').exec();
   }
 
   async findByOrderNumber(orderNumber: string): Promise<OrderDocument | null> {
@@ -17,7 +17,7 @@ export class OrderRepository {
   }
 
   async findByIdForUser(id: string, userId: string): Promise<OrderDocument | null> {
-    return OrderModel.findOne({ _id: id, user: userId }).populate('items.cat').exec();
+    return OrderModel.findOne({ _id: id, user: userId }).populate('items.listing').exec();
   }
 
   async listForUser(userId: string, query: Record<string, unknown>) {
@@ -42,7 +42,12 @@ export class OrderRepository {
     }
 
     const [items, total] = await Promise.all([
-      OrderModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).populate('user', 'email firstName lastName').exec(),
+      OrderModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('user', 'email firstName lastName')
+        .exec(),
       OrderModel.countDocuments(filter).exec(),
     ]);
     return { items, meta: buildPaginationMeta(page, limit, total) };

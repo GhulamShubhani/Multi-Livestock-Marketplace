@@ -6,7 +6,11 @@ export interface ICategory {
   slug: string;
   description?: string;
   image?: MediaAsset;
+  icon?: string;
+  group?: string;
   parent?: Types.ObjectId;
+  listingCount: number;
+  attributes: Types.ObjectId[];
   isActive: boolean;
   sortOrder: number;
   seo?: SeoFields;

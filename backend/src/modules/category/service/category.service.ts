@@ -11,6 +11,8 @@ export interface CategoryInput {
   slug?: string;
   description?: string;
   image?: MediaAsset;
+  icon?: string;
+  group?: string;
   parent?: string | null;
   isActive?: boolean;
   sortOrder?: number;
@@ -31,7 +33,8 @@ export class CategoryService {
 
   async listAdmin(query: Record<string, unknown>) {
     const { page, limit, skip } = parsePagination(query.page, query.limit);
-    const activeOnly = query.active === 'true' ? true : query.active === 'false' ? false : undefined;
+    const activeOnly =
+      query.active === 'true' ? true : query.active === 'false' ? false : undefined;
     const filterActive = activeOnly === undefined ? undefined : activeOnly;
     const { items, total } = await categoryRepository.list({
       activeOnly: filterActive,
@@ -70,7 +73,11 @@ export class CategoryService {
       slug,
       description: dto.description,
       image: dto.image,
+      icon: dto.icon,
+      group: dto.group,
       parent: dto.parent || undefined,
+      listingCount: 0,
+      attributes: [],
       isActive: dto.isActive ?? true,
       sortOrder: dto.sortOrder ?? 0,
       seo: dto.seo,
@@ -95,6 +102,8 @@ export class CategoryService {
     if (dto.name !== undefined) update.name = dto.name.trim();
     if (dto.description !== undefined) update.description = dto.description;
     if (dto.image !== undefined) update.image = dto.image;
+    if (dto.icon !== undefined) update.icon = dto.icon;
+    if (dto.group !== undefined) update.group = dto.group;
     if (dto.isActive !== undefined) update.isActive = dto.isActive;
     if (dto.sortOrder !== undefined) update.sortOrder = dto.sortOrder;
     if (dto.seo !== undefined) update.seo = dto.seo;

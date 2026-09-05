@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 import { AppError } from '../../../utils/AppError';
 import { refId } from '../../../utils/refId';
 import { activityLogService } from '../../activity-log/service/activity-log.service';
-import { catRepository } from '../../cat/repository/cat.repository';
+import { listingRepository } from '../../listing/repository/listing.repository';
 import { orderRepository } from '../../order/repository/order.repository';
 import { reviewRepository } from '../repository/review.repository';
 import type { ReviewDocument, ReviewStatus } from '../interface/review.interface';
@@ -13,7 +13,7 @@ function ownerId(review: ReviewDocument): string {
 
 export class ReviewService {
   async listPublic(query: Record<string, unknown>) {
-    if (!query.catId) throw AppError.badRequest('catId is required');
+    if (!query.listingId) throw AppError.badRequest('listingId is required');
     return reviewRepository.list(query, true);
   }
 
@@ -23,13 +23,13 @@ export class ReviewService {
 
   async create(
     userId: string,
-    dto: { catId: string; rating: number; title?: string; body?: string; orderId?: string },
+    dto: { listingId: string; rating: number; title?: string; body?: string; orderId?: string },
   ) {
-    const cat = await catRepository.findById(dto.catId);
-    if (!cat) throw AppError.notFound('Cat not found');
+    const listing = await listingRepository.findById(dto.listingId);
+    if (!listing) throw AppError.notFound('Listing not found');
 
-    const existing = await reviewRepository.findByCatAndUser(dto.catId, userId);
-    if (existing) throw AppError.conflict('You already reviewed this cat');
+    const existing = await reviewRepository.findByListingAndUser(dto.listingId, userId);
+    if (existing) throw AppError.conflict('You already reviewed this listing');
 
     let orderRef: Types.ObjectId | undefined;
     let status: ReviewStatus = 'pending';
@@ -37,15 +37,15 @@ export class ReviewService {
     if (dto.orderId) {
       const order = await orderRepository.findByIdForUser(dto.orderId, userId);
       if (!order) throw AppError.badRequest('Order not found');
-      const purchased = order.items.some((i) => refId(i.cat) === dto.catId);
-      if (!purchased) throw AppError.badRequest('Cat not part of this order');
+      const purchased = order.items.some((i) => refId(i.listing) === dto.listingId);
+      if (!purchased) throw AppError.badRequest('Listing not part of this order');
       if (order.paymentStatus !== 'paid') throw AppError.badRequest('Order is not paid');
       orderRef = order._id as Types.ObjectId;
       status = 'approved';
     }
 
     const review = await reviewRepository.create({
-      cat: new Types.ObjectId(dto.catId),
+      listing: new Types.ObjectId(dto.listingId),
       user: new Types.ObjectId(userId),
       order: orderRef,
       rating: dto.rating,
@@ -55,7 +55,7 @@ export class ReviewService {
     });
 
     if (status === 'approved') {
-      await this.refreshCatRatings(dto.catId);
+      await this.refreshListingRatings(dto.listingId);
     }
 
     await activityLogService.log({
@@ -71,7 +71,7 @@ export class ReviewService {
   async moderate(id: string, status: ReviewStatus, actorId: string) {
     const review = await reviewRepository.updateById(id, { status });
     if (!review) throw AppError.notFound('Review not found');
-    await this.refreshCatRatings(refId(review.cat));
+    await this.refreshListingRatings(refId(review.listing));
     await activityLogService.log({
       actor: actorId,
       action: 'reviews.moderate',
@@ -89,14 +89,14 @@ export class ReviewService {
       throw AppError.forbidden('Forbidden');
     }
 
-    const catId = refId(review.cat);
+    const listingId = refId(review.listing);
     await reviewRepository.deleteById(id);
-    await this.refreshCatRatings(catId);
+    await this.refreshListingRatings(listingId);
   }
 
-  private async refreshCatRatings(catId: string) {
-    const { average, count } = await reviewRepository.aggregateRatings(catId);
-    await catRepository.updateById(catId, {
+  private async refreshListingRatings(listingId: string) {
+    const { average, count } = await reviewRepository.aggregateRatings(listingId);
+    await listingRepository.updateById(listingId, {
       averageRating: average,
       reviewCount: count,
     });

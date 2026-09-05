@@ -4,14 +4,14 @@ export type DashboardOverview = {
   cards: {
     usersTotal: number;
     customersTotal: number;
-    catsAvailable: number;
-    catsReserved: number;
-    catsSold: number;
+    listingsAvailable: number;
+    listingsReserved: number;
+    listingsSold: number;
     ordersTotal: number;
     ordersPending: number;
     paidOrders: number;
     revenueCents: number;
-    paymentsSucceeded: number;
+    paymentsVerified: number;
     reviewsPending: number;
   };
   salesLast30Days: Array<{ date: string; revenueCents: number; orders: number }>;

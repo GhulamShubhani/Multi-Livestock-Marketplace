@@ -15,7 +15,7 @@ const couponSchema = new Schema<ICoupon>(
     endsAt: { type: Date, index: true },
     isActive: { type: Boolean, default: true, index: true },
     applicableCategories: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
-    applicableCats: [{ type: Schema.Types.ObjectId, ref: 'Cat' }],
+    applicableListings: [{ type: Schema.Types.ObjectId, ref: 'Listing' }],
   },
   { timestamps: true, collection: 'coupons' },
 );

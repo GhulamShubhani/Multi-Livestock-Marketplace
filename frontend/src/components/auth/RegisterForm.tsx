@@ -2,12 +2,14 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '@/stores/auth';
+import { APP_NAME } from '@/lib/utils';
+import { PasswordField } from '@/components/auth/PasswordField';
 
 const schema = z
   .object({
@@ -33,6 +35,7 @@ type FormValues = z.infer<typeof schema>;
 
 export function RegisterForm() {
   const router = useRouter();
+  const search = useSearchParams();
   const registerUser = useAuthStore((s) => s.register);
   const [error, setError] = React.useState<string | null>(null);
   const {
@@ -51,7 +54,10 @@ export function RegisterForm() {
         lastName: values.lastName,
         phone: values.phone || undefined,
       });
-      router.push('/profile');
+      const next = search.get('next') || '/animals';
+      router.push(
+        `/auth/verify-email?pending=1&email=${encodeURIComponent(values.email)}&next=${encodeURIComponent(next)}`,
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Registration failed');
     }
@@ -66,7 +72,8 @@ export function RegisterForm() {
         Create account
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Join Cat Marketplace to save favorites and check out securely.
+        Join {APP_NAME} to browse listings and contact sellers. We&apos;ll send a verification link
+        to your email.
       </Typography>
       {error ? (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -93,21 +100,22 @@ export function RegisterForm() {
         <TextField
           label="Email"
           type="email"
+          autoComplete="email"
           error={Boolean(errors.email)}
           helperText={errors.email?.message}
           {...register('email')}
         />
         <TextField label="Phone (optional)" {...register('phone')} />
-        <TextField
+        <PasswordField
           label="Password"
-          type="password"
+          autoComplete="new-password"
           error={Boolean(errors.password)}
           helperText={errors.password?.message}
           {...register('password')}
         />
-        <TextField
+        <PasswordField
           label="Confirm password"
-          type="password"
+          autoComplete="new-password"
           error={Boolean(errors.confirmPassword)}
           helperText={errors.confirmPassword?.message}
           {...register('confirmPassword')}

@@ -3,7 +3,7 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 ARG VITE_API_URL=http://localhost:5000/api/v1
-ARG VITE_APP_NAME=Cat Marketplace Admin
+ARG VITE_APP_NAME=Multi-Livestock Marketplace CRM
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_APP_NAME=$VITE_APP_NAME
 COPY package.json package-lock.json ./

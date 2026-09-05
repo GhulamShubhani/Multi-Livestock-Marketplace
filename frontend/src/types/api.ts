@@ -39,11 +39,23 @@ export type PublicUser = {
   status: string;
 };
 
+export type ImageSourceType = 'ai' | 'external' | 'upload';
+
 export type MediaImage = {
   url: string;
   publicId?: string;
   isPrimary?: boolean;
   alt?: string;
+  /** How the image was produced / obtained (hero CMS, admin uploads, etc.) */
+  sourceType?: ImageSourceType;
+  sourceLabel?: string;
+};
+
+export type HeroSlide = {
+  src: string;
+  alt: string;
+  sourceType?: ImageSourceType;
+  sourceLabel?: string;
 };
 
 export type MediaVideo = {
@@ -59,29 +71,51 @@ export type NamedRef = {
   description?: string;
 };
 
-export type Cat = {
+export type ListingLocation = {
+  country: string;
+  state: string;
+  district?: string;
+  city: string;
+  village?: string;
+  area?: string;
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
+};
+
+export type AvailabilityStatus = 'draft' | 'available' | 'reserved' | 'sold' | 'archived';
+export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
+
+export type Listing = {
   _id: string;
-  name: string;
+  title: string;
   slug: string;
-  sku?: string;
+  listingId: string;
   description: string;
   shortDescription?: string;
-  breed: NamedRef | string;
+  breed?: NamedRef | string;
   category: NamedRef | string;
-  ageMonths: number;
+  subcategory?: NamedRef | string;
+  ageMonths?: number;
   gender: 'male' | 'female' | 'unknown';
-  color?: string;
+  weight?: number;
+  healthStatus?: string;
+  vaccinationStatus?: string;
   price: number;
-  compareAtPrice?: number;
+  negotiable: boolean;
   currency: string;
-  stock: number;
-  status: string;
+  location: ListingLocation;
   images: MediaImage[];
   videos?: MediaVideo[];
-  vaccinated: boolean;
-  neutered: boolean;
-  pedigree: boolean;
+  availabilityStatus: AvailabilityStatus;
+  verificationStatus: VerificationStatus;
   featured: boolean;
+  premium?: boolean;
+  isActive?: boolean;
+  attributes?: Record<string, unknown>;
+  seller?: string | { _id: string; firstName?: string; lastName?: string; email?: string };
+  sellerMobile?: string;
+  sellerWhatsApp?: string;
   averageRating: number;
   reviewCount: number;
   createdAt?: string;
@@ -90,6 +124,9 @@ export type Cat = {
 
 export type Category = NamedRef & {
   image?: MediaImage;
+  icon?: string;
+  group?: string;
+  listingCount?: number;
   isActive?: boolean;
   sortOrder?: number;
 };
@@ -100,6 +137,16 @@ export type Breed = NamedRef & {
   lifeSpan?: string;
   image?: MediaImage;
   isActive?: boolean;
+};
+
+export type Attribute = NamedRef & {
+  key?: string;
+  dataType?: string;
+  unit?: string;
+  options?: string[];
+  categoryIds?: string[];
+  filterable?: boolean;
+  showOnCard?: boolean;
 };
 
 export type Address = {
@@ -115,7 +162,7 @@ export type Address = {
 };
 
 export type OrderItem = {
-  cat: string | Cat;
+  listing: string | Listing;
   name: string;
   sku?: string;
   image?: string;
@@ -146,12 +193,12 @@ export type Order = {
 
 export type WishlistApi = {
   user: string;
-  items: Array<{ cat: Cat; addedAt: string }>;
+  items: Array<{ listing: Listing; addedAt: string }>;
 };
 
 export type Review = {
   _id: string;
-  cat: string;
+  listing: string;
   user?: { firstName: string; lastName: string };
   rating: number;
   title?: string;
@@ -160,26 +207,40 @@ export type Review = {
   createdAt: string;
 };
 
-export type Banner = {
-  _id: string;
-  title: string;
-  image: MediaImage;
-  linkUrl?: string;
-  placement: string;
-  sortOrder: number;
+export type HomepageSection = {
+  _id?: string;
+  key: string;
+  type: string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  image?: MediaImage;
+  ctaText?: string;
+  ctaUrl?: string;
+  category?: string | NamedRef;
+  displayOrder: number;
+  isActive: boolean;
+  config?: Record<string, unknown>;
 };
 
-export type CheckoutSessionResult = {
-  mock: boolean;
-  sessionId: string;
-  url?: string;
-  paymentId: string;
+export type PaymentMethods = {
+  receiverName?: string | null;
+  mobile?: string | null;
+  upiId?: string | null;
+  qrCode?: MediaImage | string | null;
+  bankName?: string | null;
+  accountHolder?: string | null;
+  accountNumber?: string | null;
+  ifsc?: string | null;
+  instructions?: string | null;
+  providers?: string[];
 };
 
 export type CartItem = {
-  catId: string;
-  name: string;
+  listingId: string;
+  title: string;
   slug: string;
+  categorySlug?: string;
   price: number;
   currency: string;
   image?: string;
@@ -187,14 +248,15 @@ export type CartItem = {
 };
 
 export type WishlistItemLocal = {
-  catId: string;
-  name: string;
+  listingId: string;
+  title: string;
   slug: string;
+  categorySlug?: string;
   price: number;
   image?: string;
 };
 
-export type CatsQuery = {
+export type ListingsQuery = {
   page?: number;
   limit?: number;
   q?: string;
@@ -204,5 +266,7 @@ export type CatsQuery = {
   featured?: boolean;
   minPrice?: number;
   maxPrice?: number;
+  state?: string;
+  city?: string;
   sort?: string;
 };

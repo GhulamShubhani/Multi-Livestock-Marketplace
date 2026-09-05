@@ -7,8 +7,8 @@ import type { CartItem } from '@/types/api';
 type CartState = {
   items: CartItem[];
   addItem: (item: CartItem) => void;
-  removeItem: (catId: string) => void;
-  updateQuantity: (catId: string, quantity: number) => void;
+  removeItem: (listingId: string) => void;
+  updateQuantity: (listingId: string, quantity: number) => void;
   clear: () => void;
   totalCents: () => number;
   count: () => number;
@@ -20,11 +20,11 @@ export const useCartStore = create<CartState>()(
       items: [],
       addItem: (item) =>
         set((state) => {
-          const existing = state.items.find((i) => i.catId === item.catId);
+          const existing = state.items.find((i) => i.listingId === item.listingId);
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.catId === item.catId
+                i.listingId === item.listingId
                   ? { ...i, quantity: Math.min(10, i.quantity + item.quantity) }
                   : i,
               ),
@@ -32,17 +32,18 @@ export const useCartStore = create<CartState>()(
           }
           return { items: [...state.items, item] };
         }),
-      removeItem: (catId) => set((state) => ({ items: state.items.filter((i) => i.catId !== catId) })),
-      updateQuantity: (catId, quantity) =>
+      removeItem: (listingId) =>
+        set((state) => ({ items: state.items.filter((i) => i.listingId !== listingId) })),
+      updateQuantity: (listingId, quantity) =>
         set((state) => ({
           items: state.items
-            .map((i) => (i.catId === catId ? { ...i, quantity } : i))
+            .map((i) => (i.listingId === listingId ? { ...i, quantity } : i))
             .filter((i) => i.quantity > 0),
         })),
       clear: () => set({ items: [] }),
       totalCents: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
       count: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
     }),
-    { name: 'cat-marketplace-cart' },
+    { name: 'livestock-marketplace-cart' },
   ),
 );

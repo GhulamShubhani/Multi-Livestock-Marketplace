@@ -1,22 +1,17 @@
 import { apiGet, apiMutate } from '@/lib/api/client';
-import type {
-  Address,
-  CheckoutSessionResult,
-  Order,
-  PublicUser,
-  Review,
-  WishlistApi,
-} from '@/types/api';
+import type { Address, Order, PaymentMethods, PublicUser, Review, WishlistApi } from '@/types/api';
 
 export const wishlistApi = {
   get: () => apiGet<{ wishlist: WishlistApi }>('/wishlist'),
-  add: (catId: string) => apiMutate<{ wishlist: WishlistApi }>('post', `/wishlist/${catId}`),
-  remove: (catId: string) => apiMutate<{ wishlist: WishlistApi }>('delete', `/wishlist/${catId}`),
+  add: (listingId: string) =>
+    apiMutate<{ wishlist: WishlistApi }>('post', `/wishlist/${listingId}`),
+  remove: (listingId: string) =>
+    apiMutate<{ wishlist: WishlistApi }>('delete', `/wishlist/${listingId}`),
 };
 
 export const orderApi = {
   create: (body: {
-    items: Array<{ catId: string; quantity: number }>;
+    items: Array<{ listingId: string; quantity: number }>;
     shippingAddress: Omit<Address, '_id' | 'isDefault'>;
     couponCode?: string;
     notes?: string;
@@ -28,10 +23,15 @@ export const orderApi = {
 };
 
 export const paymentApi = {
-  checkoutSession: (orderId: string) =>
-    apiMutate<CheckoutSessionResult>('post', '/payments/checkout-session', { orderId }),
-  mockComplete: (sessionId: string) =>
-    apiMutate<{ payment: unknown }>('post', '/payments/mock-complete', { sessionId }),
+  methods: () => apiGet<{ methods: PaymentMethods }>('/payments/methods'),
+  submit: (body: {
+    orderId: string;
+    provider?: string;
+    transactionId?: string;
+    utr?: string;
+    paymentDate?: string;
+    screenshot?: { url: string; publicId?: string };
+  }) => apiMutate<{ payment: unknown }>('post', '/payments/submit', body),
 };
 
 export const profileApi = {
@@ -50,7 +50,7 @@ export const profileApi = {
 };
 
 export const couponApi = {
-  validate: (body: { code: string; subtotal: number; catIds?: string[] }) =>
+  validate: (body: { code: string; subtotal: number; listingIds?: string[] }) =>
     apiMutate<{ code: string; type: string; value: number; discount: number }>(
       'post',
       '/coupons/validate',
@@ -59,8 +59,26 @@ export const couponApi = {
 };
 
 export const reviewApi = {
-  list: (params?: { catId?: string; page?: number; limit?: number }) =>
+  list: (params?: { listingId?: string; page?: number; limit?: number }) =>
     apiGet<{ reviews: Review[] }>('/reviews', params),
-  create: (body: { catId: string; rating: number; title?: string; body?: string; orderId?: string }) =>
-    apiMutate<{ review: Review }>('post', '/reviews', body),
+  create: (body: {
+    listingId: string;
+    rating: number;
+    title?: string;
+    body?: string;
+    orderId?: string;
+  }) => apiMutate<{ review: Review }>('post', '/reviews', body),
+};
+
+export const enquiryApi = {
+  create: (body: {
+    listingId: string;
+    message: string;
+    contactMethod: 'call' | 'whatsapp' | 'enquiry' | 'view_mobile';
+    buyerName?: string;
+    buyerPhone?: string;
+    buyerEmail?: string;
+  }) => apiMutate<{ enquiry: unknown }>('post', '/enquiries', body),
+  listMine: (params?: { page?: number; limit?: number }) =>
+    apiGet<{ enquiries: unknown[] }>('/enquiries/me', params),
 };

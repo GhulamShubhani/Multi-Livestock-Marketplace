@@ -7,37 +7,23 @@ import { authorize } from '../../auth/middleware/authorize';
 import { requireEmailVerified } from '../../auth/middleware/requireEmailVerified';
 import {
   listPaymentValidators,
-  mockCompleteValidators,
-  orderIdBodyValidators,
   paymentController,
   refundValidators,
+  submitPaymentValidators,
+  verifyPaymentValidators,
 } from '../controller/payment.controller';
 
 const router = Router();
 
+router.get('/methods', paymentController.methods);
+
 router.post(
-  '/checkout-session',
+  '/submit',
   authenticate,
   requireEmailVerified,
   csrfProtection,
-  validateRequest(orderIdBodyValidators),
-  paymentController.checkoutSession,
-);
-router.post(
-  '/payment-intent',
-  authenticate,
-  requireEmailVerified,
-  csrfProtection,
-  validateRequest(orderIdBodyValidators),
-  paymentController.paymentIntent,
-);
-router.post(
-  '/mock-complete',
-  authenticate,
-  requireEmailVerified,
-  csrfProtection,
-  validateRequest(mockCompleteValidators),
-  paymentController.mockComplete,
+  validateRequest(submitPaymentValidators),
+  paymentController.submit,
 );
 
 router.get('/me', authenticate, validateRequest(listPaymentValidators), paymentController.listMine);
@@ -49,7 +35,15 @@ router.get(
   validateRequest(listPaymentValidators),
   paymentController.listAdmin,
 );
-router.post(
+router.patch(
+  '/:id/verify',
+  authenticate,
+  authorize(PERMISSIONS.PAYMENTS_VERIFY),
+  csrfProtection,
+  validateRequest(verifyPaymentValidators),
+  paymentController.verify,
+);
+router.patch(
   '/:id/refund',
   authenticate,
   authorize(PERMISSIONS.PAYMENTS_REFUND),

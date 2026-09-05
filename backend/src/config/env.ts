@@ -55,7 +55,7 @@ const envSchema = z.object({
 
   BODY_LIMIT: z.string().default('100kb'),
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'http', 'debug']).default('info'),
-  DEFAULT_CURRENCY: z.string().length(3).default('USD'),
+  DEFAULT_CURRENCY: z.string().length(3).default('INR'),
 
   SUPER_ADMIN_EMAIL: z.string().email(),
   SUPER_ADMIN_PASSWORD: z.string().min(12),
@@ -67,26 +67,23 @@ const envSchema = z.object({
   CLOUDINARY_CLOUD_NAME: z.string().optional().default(''),
   CLOUDINARY_API_KEY: z.string().optional().default(''),
   CLOUDINARY_API_SECRET: z.string().optional().default(''),
-  CLOUDINARY_FOLDER: z.string().default('cat-marketplace'),
+  CLOUDINARY_FOLDER: z.string().default('livestock-marketplace'),
   UPLOAD_MAX_FILE_SIZE_MB: z.coerce.number().positive().default(5),
   UPLOAD_MAX_FILES: z.coerce.number().int().positive().default(10),
 
-  STRIPE_SECRET_KEY: z.string().optional().default(''),
-  STRIPE_WEBHOOK_SECRET: z.string().optional().default(''),
-  STRIPE_SUCCESS_URL: z
-    .string()
-    .optional()
-    .default('')
-    .transform((v) => (v ? v : undefined))
-    .pipe(z.string().url().optional()),
-  STRIPE_CANCEL_URL: z
-    .string()
-    .optional()
-    .default('')
-    .transform((v) => (v ? v : undefined))
-    .pipe(z.string().url().optional()),
   TAX_RATE_BPS: z.coerce.number().int().min(0).default(0),
   SHIPPING_FLAT_CENTS: z.coerce.number().int().min(0).default(0),
+
+  SMTP_HOST: z.string().optional().default(''),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional().default(''),
+  SMTP_PASSWORD: z.string().optional().default(''),
+  MAIL_FROM: z.string().optional().default(''),
+  /** Windows antivirus TLS interception often needs this in local development */
+  SMTP_TLS_ALLOW_INVALID_CERTS: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -109,10 +106,23 @@ export const isDevelopment = env.NODE_ENV === 'development';
 export const corsOrigins = [...env.FRONTEND_URL, ...env.ADMIN_URL];
 
 function pickPrimaryOrigin(origins: string[]): string {
+  if (isDevelopment) {
+    const local = origins.find(
+      (origin) => origin.includes('localhost') || origin.includes('127.0.0.1'),
+    );
+    if (local) return local;
+  }
   return origins.find((origin) => origin.startsWith('https://')) ?? origins[0];
 }
 
-/** Primary storefront URL for emails / Stripe redirects (prefers https). */
+/** True when SMTP credentials are configured for real email delivery. */
+export const smtpConfigured = Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD);
+
+/** Allow SMTP TLS with intercepted/self-signed certs (common on Windows AV). */
+export const smtpAllowInvalidCerts =
+  env.SMTP_TLS_ALLOW_INVALID_CERTS ?? (isDevelopment ? true : false);
+
+/** Primary storefront URL for emails / redirects (prefers https). */
 export const primaryFrontendUrl = pickPrimaryOrigin(env.FRONTEND_URL);
 
 /** Primary admin URL (prefers https). */

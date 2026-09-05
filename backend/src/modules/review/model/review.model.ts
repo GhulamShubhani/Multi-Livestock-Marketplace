@@ -3,7 +3,7 @@ import type { IReview } from '../interface/review.interface';
 
 const reviewSchema = new Schema<IReview>(
   {
-    cat: { type: Schema.Types.ObjectId, ref: 'Cat', required: true, index: true },
+    listing: { type: Schema.Types.ObjectId, ref: 'Listing', required: true, index: true },
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     order: { type: Schema.Types.ObjectId, ref: 'Order' },
     rating: { type: Number, required: true, min: 1, max: 5 },
@@ -19,6 +19,6 @@ const reviewSchema = new Schema<IReview>(
   { timestamps: true, collection: 'reviews' },
 );
 
-reviewSchema.index({ cat: 1, user: 1 }, { unique: true });
+reviewSchema.index({ listing: 1, user: 1 }, { unique: true });
 
 export const ReviewModel = model<IReview>('Review', reviewSchema);

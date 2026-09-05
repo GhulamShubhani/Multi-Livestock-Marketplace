@@ -4,13 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Alert,
-  Button,
-  Container,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Alert, Button, Container, Stack, Typography } from '@mui/material';
 import { useAuthStore } from '@/stores/auth';
 import { orderApi } from '@/lib/api/commerce';
 import { getApiErrorMessage } from '@/lib/api/client';
@@ -63,7 +57,7 @@ export function OrderDetailView({ id }: { id: string }) {
     <Container maxWidth="md" sx={{ py: { xs: 6, md: 10 } }}>
       {search.get('paid') ? (
         <Alert severity="success" sx={{ mb: 3 }}>
-          Payment completed. Thank you!
+          Payment submitted — under verification. Thank you!
         </Alert>
       ) : null}
       {cancelError ? (
@@ -74,7 +68,11 @@ export function OrderDetailView({ id }: { id: string }) {
 
       <Typography
         variant="h2"
-        sx={{ fontFamily: 'var(--font-fraunces), Georgia, serif', fontSize: { xs: '2rem', md: '2.4rem' }, mb: 1 }}
+        sx={{
+          fontFamily: 'var(--font-fraunces), Georgia, serif',
+          fontSize: { xs: '2rem', md: '2.4rem' },
+          mb: 1,
+        }}
       >
         Order {order.orderNumber}
       </Typography>
@@ -84,7 +82,11 @@ export function OrderDetailView({ id }: { id: string }) {
 
       <Stack spacing={2} sx={{ mb: 4 }}>
         {order.items.map((item, idx) => (
-          <Stack key={`${item.name}-${idx}`} direction="row" sx={{ justifyContent: 'space-between' }}>
+          <Stack
+            key={`${item.name}-${idx}`}
+            direction="row"
+            sx={{ justifyContent: 'space-between' }}
+          >
             <Typography>
               {item.name} × {item.quantity}
             </Typography>
@@ -103,16 +105,16 @@ export function OrderDetailView({ id }: { id: string }) {
         ) : null}
         <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
           <Typography sx={{ fontWeight: 700 }}>Total</Typography>
-          <Typography sx={{ fontWeight: 700 }}>{formatMoney(order.total, order.currency)}</Typography>
+          <Typography sx={{ fontWeight: 700 }}>
+            {formatMoney(order.total, order.currency)}
+          </Typography>
         </Stack>
       </Stack>
 
-      <Typography sx={{ fontWeight: 600, mb: 1 }}>
-        Shipping
-      </Typography>
+      <Typography sx={{ fontWeight: 600, mb: 1 }}>Shipping</Typography>
       <Typography color="text.secondary" sx={{ mb: 4 }}>
-        {order.shippingAddress.line1}, {order.shippingAddress.city} {order.shippingAddress.postalCode},{' '}
-        {order.shippingAddress.country}
+        {order.shippingAddress.line1}, {order.shippingAddress.city}{' '}
+        {order.shippingAddress.postalCode}, {order.shippingAddress.country}
       </Typography>
 
       <Stack direction="row" spacing={2}>

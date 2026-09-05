@@ -9,42 +9,44 @@
 - Brute-force protection and account lockout
 - Logout current device / all devices
 
+Auth spirit is unchanged from the original platform; roles/permissions expanded for livestock marketplace (seller, buyer, listings, attributes, enquiries, homepage, payment verify).
+
 ---
 
 ## Token model
 
-| Token | Lifetime | Storage | Contents |
-|-------|----------|---------|----------|
-| Access JWT | 15 minutes | HttpOnly cookie `access_token` | `sub`, `role`, `permissions[]`, `sid` |
-| Refresh | 7–30 days | HttpOnly cookie `refresh_token` | Opaque random string; **hash** stored in DB |
+| Token      | Lifetime                  | Storage                         | Contents                                    |
+| ---------- | ------------------------- | ------------------------------- | ------------------------------------------- |
+| Access JWT | 15 minutes (configurable) | HttpOnly cookie `access_token`  | `sub`, `role`, `permissions[]`, `sid`       |
+| Refresh    | 7–30 days                 | HttpOnly cookie `refresh_token` | Opaque random string; **hash** stored in DB |
+| CSRF       | Session-aligned           | JS-readable cookie `csrf_token` | Double-submit via `X-CSRF-Token`            |
 
 Refresh tokens are stored hashed (`sha256`) in `refresh_tokens` with a `familyId` for rotation reuse detection.
 
 ### Cookie flags (production)
 
 ```text
-HttpOnly; Secure; SameSite=Lax (or Strict for admin);
-Path=/; Domain=.yourdomain.com
+HttpOnly; Secure; SameSite=Lax|None;
+Path=/; Domain=.yourdomain.com   # optional shared parent domain
 ```
 
-Separate cookie names/prefixes for admin vs customer if origins differ (recommended: shared API, shared cookie domain behind same parent domain).
+Cross-site SPA → API on different hosts typically needs `COOKIE_SECURE=true` and `COOKIE_SAME_SITE=none`.
 
 ---
 
-## Registration (Customer)
+## Registration
 
 ```text
 Client                  API                     DB / Email
   │  POST /auth/register  │
   │──────────────────────►│ validate, hash password
-  │                       │ create user (pending/unverified)
-  │                       │ create email verification token (hashed)
+  │                       │ create user (buyer/customer role)
+  │                       │ email verification token (hashed)
   │                       │──────────────────────────► send email
-  │◄──────────────────────│ 201 + set cookies? (optional: require verify first)
-  │                       │ Prefer: no login until verified OR limited session
+  │◄──────────────────────│ cookies optional per policy
 ```
 
-**Policy recommendation:** Allow login but block checkout until `isEmailVerified`; or require verify first. Configurable via settings.
+Checkout and payment submit require **verified email** (`requireEmailVerified`).
 
 ---
 
@@ -52,68 +54,54 @@ Client                  API                     DB / Email
 
 ```text
 1. Validate email/password
-2. If lockUntil > now → 423/401 locked
-3. On failure → increment failedLoginAttempts; lock after N (e.g. 5) for M minutes
-4. On success → reset counters; issue access JWT + refresh token (new family)
-5. Set cookies; write activity_log (login + IP + UA)
-6. Optional: require OTP step-up for admin roles
+2. If lockUntil > now → locked
+3. On failure → increment failedLoginAttempts; lock after 5 for 30 minutes
+4. On success → reset counters; issue access JWT + refresh (new family)
+5. Set cookies; activity_log
+6. Optional OTP step-up for admin roles
 ```
 
-Admin logins should use stricter rate limits and optional OTP.
+Admin app allows staff roles only (`super_admin`, `admin`, `manager`, `staff`).
 
 ---
 
 ## Refresh rotation
 
 ```text
-POST /auth/refresh  (sends refresh cookie)
+POST /auth/refresh
 
 1. Lookup refresh by hash
-2. If missing/expired/revoked → 401 clear cookies
-3. If token already used (replacedBy set) → REUSE ATTACK
-      → revoke entire familyId; force re-login
-4. Else:
-      → revoke old token (set revokedAt, replacedBy)
-      → mint new refresh in same family
-      → mint new access JWT
-      → set cookies
+2. Missing/expired/revoked → 401 clear cookies
+3. Already used (replacedBy) → REUSE ATTACK → revoke familyId
+4. Else rotate refresh + mint new access JWT + set cookies
 ```
 
 ---
 
 ## Logout
 
-- **Current:** revoke matching refresh row; clear cookies
+- **Current:** revoke matching refresh; clear cookies
 - **All devices:** revoke all refresh rows for user; clear cookies
+
+Both require CSRF on mutating cookie auth.
 
 ---
 
 ## Forgot / Reset password
 
 ```text
-POST /auth/forgot-password { email }
-  → always return 200 (no email enumeration)
-  → if user exists: store hashed reset token + expiry; email link
-
+POST /auth/forgot-password { email }  → always 200
 POST /auth/reset-password { token, password }
-  → validate strength
-  → update passwordHash
-  → revoke ALL refresh tokens
-  → clear reset fields
-  → activity_log
+  → update passwordHash, revoke ALL refresh tokens
 ```
 
 ---
 
 ## OTP
 
-Used for: email verification alternative, admin step-up, sensitive actions.
+Used for email verification alternative, admin step-up, sensitive actions.
 
-```text
-1. Generate 6-digit OTP; store hash + expiry (5–10 min); limit send rate
-2. Verify: compare hash; increment otpAttempts; lock after abuse
-3. On success: clear OTP fields; mark verified / allow action
-```
+Limits: 6-digit, ~10 min expiry, max attempts, send rate limited.
 
 ---
 
@@ -124,56 +112,67 @@ User → Role → Permissions[]
          └─ optional user.permissionsOverride
 ```
 
-**Default roles**
+### Default roles
 
-| Role | Typical access |
-|------|----------------|
-| `super_admin` | All permissions |
-| `admin` | Most CRM except destructive system settings |
-| `manager` | Catalog, orders, reports (no role admin) |
-| `staff` | Limited order/inventory ops |
-| `customer` | Own profile, orders, wishlist, reviews |
+| Role          | Typical access                                          |
+| ------------- | ------------------------------------------------------- |
+| `super_admin` | All permissions                                         |
+| `admin`       | Broad CRM (excl. most destructive system ops as seeded) |
+| `manager`     | Catalog, orders, reports                                |
+| `staff`       | Limited ops                                             |
+| `seller`      | Seller listing / enquiry permissions as seeded          |
+| `buyer`       | Own profile, orders, wishlist, reviews, enquiries       |
+| `customer`    | Legacy alias of buyer permissions                       |
 
-**Permission key format:** `module:action`  
-Examples: `cats:create`, `orders:refund`, `reports:export`, `roles:update`
+### Permission key format
+
+`module:action` — examples:
+
+- `listings:create|read|update|delete|verify`
+- `attributes:create|read|update|delete`
+- `enquiries:read|update`
+- `sellers:read|update`
+- `homepage:create|read|update|delete`
+- `payments:read|verify|refund`
+- `orders:read|update`, `categories:*`, `breeds:*`, `cms:*`, `settings:*`, `dashboard:read`, `activity_logs:read`, …
 
 ### Middleware chain
 
 ```text
-authenticate → attach req.user
-authorize('orders:refund') → check permission set
+authenticate → authorize('payments:verify') → csrfProtection (mutations)
 ```
 
-Frontend/Admin hide UI by permissions from `/auth/me`, but **API always enforces**.
+UI hides by permissions from `/auth/me`; **API always enforces**.
 
 ---
 
 ## CSRF strategy (SPA + cookies)
 
-Because auth is cookie-based:
-
-1. Issue CSRF token cookie (`csrf_token`, readable by JS) or header from `/auth/csrf`
+1. CSRF token cookie readable by JS (`csrf_token`)
 2. Require matching `X-CSRF-Token` on POST/PUT/PATCH/DELETE
-3. Stripe webhook excluded (signature verification instead)
-4. SameSite cookies reduce risk; CSRF still recommended for defense in depth
+3. SameSite reduces risk; CSRF remains defense in depth
+4. No Stripe webhook exception (Stripe removed)
 
 ---
 
 ## Session management (Admin)
 
-- List active refresh sessions (device, IP, last used)
-- Revoke individual session
-- Force logout user from CRM
+- List active refresh sessions (device, IP)
+- Revoke individual or all sessions for a user
 
 ---
 
-## Sequence: Checkout with auth
+## Sequence: Checkout with manual payment
 
 ```text
-Login → Browse → Add wishlist/cart (client) → Create Order (API)
-  → Create Stripe Checkout Session
-  → Redirect Stripe → Webhook payment_intent.succeeded
-  → Mark Payment + Order paid → Notify user
+Login (verified email)
+  → Browse listings → Cart
+  → POST /orders
+  → GET /payments/methods   (UPI / QR / bank from settings)
+  → Customer pays offline / UPI
+  → POST /payments/submit   (UTR + screenshot)
+  → Admin PATCH /payments/:id/verify
+  → Order paymentStatus → paid  (or rejected / later refund)
 ```
 
-Never mark order paid from client success URL alone — **webhook is source of truth**.
+Never mark an order paid from the client alone — **admin verification** (or an explicit verified status transition in the payment service) is the source of truth.

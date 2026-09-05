@@ -10,4 +10,4 @@ export interface ISettings {
 
 export type SettingsDocument = Document<Types.ObjectId> & ISettings;
 
-export const PUBLIC_SETTINGS_KEYS = ['general', 'seo', 'storefront'] as const;
+export const PUBLIC_SETTINGS_KEYS = ['general', 'seo', 'storefront', 'payment'] as const;

@@ -6,7 +6,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
  * Double-submit CSRF: browser must send X-CSRF-Token matching csrf_token cookie.
- * Stripe webhooks and other signed endpoints should skip this middleware.
+ * Signed or server-to-server endpoints that skip cookies should not use this middleware.
  */
 export function csrfProtection(req: Request, _res: Response, next: NextFunction): void {
   if (SAFE_METHODS.has(req.method)) {

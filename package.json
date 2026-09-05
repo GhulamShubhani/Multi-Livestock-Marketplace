@@ -2,7 +2,7 @@
   "name": "cat-marketplace",
   "version": "1.0.0",
   "private": true,
-  "description": "Production-ready Cat Marketplace monorepo (frontend, admin, backend)",
+  "description": "Production-ready Multi-Livestock Marketplace monorepo (frontend, admin, backend)",
   "workspaces": [
     "frontend",
     "admin",
@@ -21,6 +21,7 @@
     "start": "node backend/dist/server.js",
     "start:backend": "npm run start --workspace=@cat-marketplace/backend",
     "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspace=@cat-marketplace/backend",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
     "docker:up": "docker compose -f docker/docker-compose.yml up -d mongo api",

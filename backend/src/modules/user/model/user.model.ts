@@ -52,7 +52,6 @@ const userSchema = new Schema<IUser>(
       index: true,
     },
     addresses: { type: [addressSchema], default: [] },
-    stripeCustomerId: { type: String },
     lastLoginAt: { type: Date },
     lastLoginIp: { type: String },
   },

@@ -67,7 +67,7 @@ export function DashboardPage() {
           <StatCard label="Orders" value={cards?.ordersTotal ?? '—'} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="Available cats" value={cards?.catsAvailable ?? '—'} />
+          <StatCard label="Available listings" value={cards?.listingsAvailable ?? '—'} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard label="Pending reviews" value={cards?.reviewsPending ?? '—'} />
@@ -82,7 +82,7 @@ export function DashboardPage() {
           <StatCard label="Paid orders" value={cards?.paidOrders ?? '—'} />
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard label="Successful payments" value={cards?.paymentsSucceeded ?? '—'} />
+          <StatCard label="Verified payments" value={cards?.paymentsVerified ?? '—'} />
         </Grid>
       </Grid>
 
@@ -127,7 +127,11 @@ export function DashboardPage() {
                       <Button component={RouterLink} to="/orders" size="small" sx={{ px: 0 }}>
                         {o.orderNumber}
                       </Button>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: 'block' }}
+                      >
                         {formatDate(o.createdAt)}
                       </Typography>
                     </TableCell>

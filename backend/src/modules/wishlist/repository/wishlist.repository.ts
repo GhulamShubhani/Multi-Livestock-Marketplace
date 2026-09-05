@@ -3,7 +3,7 @@ import type { WishlistDocument } from '../interface/wishlist.interface';
 
 export class WishlistRepository {
   async findByUser(userId: string): Promise<WishlistDocument | null> {
-    return WishlistModel.findOne({ user: userId }).populate('items.cat').exec();
+    return WishlistModel.findOne({ user: userId }).populate('items.listing').exec();
   }
 
   async findOrCreate(userId: string): Promise<WishlistDocument> {

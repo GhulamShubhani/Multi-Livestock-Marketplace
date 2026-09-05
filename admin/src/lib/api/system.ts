@@ -34,8 +34,21 @@ export type ActivityLog = {
   module: string;
   resourceType?: string;
   resourceId?: string;
-  severity: string;
   createdAt: string;
+  severity: string;
+};
+
+export type HomepageSection = {
+  _id: string;
+  key: string;
+  type: string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  ctaText?: string;
+  ctaUrl?: string;
+  displayOrder: number;
+  isActive: boolean;
 };
 
 export const contentApi = {
@@ -52,6 +65,16 @@ export const contentApi = {
   updateBanner: (id: string, body: Record<string, unknown>) =>
     apiMutate<{ banner: BannerAdmin }>('patch', `/banners/${id}`, body),
   deleteBanner: (id: string) => apiMutate<null>('delete', `/banners/${id}`),
+
+  listHomepage: (params?: Record<string, unknown>) =>
+    apiGet<{ sections: HomepageSection[] }>('/homepage/admin', params),
+  createHomepage: (body: Record<string, unknown>) =>
+    apiMutate<{ section: HomepageSection }>('post', '/homepage', body),
+  updateHomepage: (id: string, body: Record<string, unknown>) =>
+    apiMutate<{ section: HomepageSection }>('patch', `/homepage/${id}`, body),
+  reorderHomepage: (items: Array<{ id: string; displayOrder: number }>) =>
+    apiMutate<{ sections: HomepageSection[] }>('patch', '/homepage/reorder', { items }),
+  deleteHomepage: (id: string) => apiMutate<null>('delete', `/homepage/${id}`),
 
   broadcast: (body: Record<string, unknown>) =>
     apiMutate<{ recipients: number }>('post', '/notifications/broadcast', body),

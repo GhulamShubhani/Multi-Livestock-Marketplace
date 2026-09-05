@@ -10,7 +10,11 @@ const categorySchema = new Schema<ICategory>(
       url: String,
       publicId: String,
     },
+    icon: { type: String, trim: true },
+    group: { type: String, trim: true, index: true },
     parent: { type: Schema.Types.ObjectId, ref: 'Category', default: null, index: true },
+    listingCount: { type: Number, default: 0, min: 0 },
+    attributes: [{ type: Schema.Types.ObjectId, ref: 'Attribute' }],
     isActive: { type: Boolean, default: true, index: true },
     sortOrder: { type: Number, default: 0 },
     seo: {

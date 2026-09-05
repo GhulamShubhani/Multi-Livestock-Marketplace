@@ -3,7 +3,7 @@ import type { Document, Types } from 'mongoose';
 export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
 export interface IReview {
-  cat: Types.ObjectId;
+  listing: Types.ObjectId;
   user: Types.ObjectId;
   order?: Types.ObjectId;
   rating: number;

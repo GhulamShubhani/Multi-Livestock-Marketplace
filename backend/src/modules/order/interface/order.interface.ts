@@ -1,20 +1,9 @@
 import type { Document, Types } from 'mongoose';
 
 export type OrderStatus =
-  | 'pending'
-  | 'paid'
-  | 'processing'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled'
-  | 'refunded';
+  'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 
-export type PaymentStatus =
-  | 'unpaid'
-  | 'paid'
-  | 'failed'
-  | 'refunded'
-  | 'partially_refunded';
+export type PaymentStatus = 'unpaid' | 'paid' | 'failed' | 'refunded' | 'partially_refunded';
 
 export interface IOrderAddress {
   label?: string;
@@ -27,7 +16,7 @@ export interface IOrderAddress {
 }
 
 export interface IOrderItem {
-  cat: Types.ObjectId;
+  listing: Types.ObjectId;
   name: string;
   sku?: string;
   image?: string;

@@ -1,11 +1,11 @@
-# Admin CRM
+# Admin CRM — Multi-Livestock Marketplace
 
-Vite + React back-office for Cat Marketplace.
+Vite + React back-office for Multi-Livestock Marketplace.
 
 ## Stack
 
-- Vite 6 + React 19 + TypeScript
-- MUI 9 + Emotion
+- Vite + React + TypeScript
+- MUI + Emotion
 - React Router
 - TanStack Query + Axios
 - Zustand auth + UI
@@ -20,11 +20,12 @@ npm run dev:backend
 npm run dev:admin
 ```
 
-App: http://localhost:5173  
-Default super admin: `superadmin@catmarketplace.local` / `SuperAdmin!23456`
+App: http://localhost:5173
+
+Default super admin: values from backend seed / `SUPER_ADMIN_*` (example `superadmin@livestockmarketplace.local` / `SuperAdmin!23456`).
 
 ## Modules
 
-Dashboard, Reports, Cats, Categories, Breeds, Orders, Payments, Coupons, Reviews, CMS, Banners, Notifications, Users, Roles (info), Activity logs, Settings.
+Dashboard, Reports, **Listings**, Categories, **Attributes**, Breeds, Orders, **Payments** (verify UPI proofs), Coupons, Reviews, **Enquiries**, CMS, Banners, **Homepage**, Notifications, Users, Roles (info), Activity logs, Settings (incl. payment receiver details).
 
-Sidebar items are filtered by the signed-in user's permissions.
+Sidebar items are filtered by the signed-in user's permissions (`listings:*`, `attributes:*`, `payments:verify`, `homepage:*`, …).
