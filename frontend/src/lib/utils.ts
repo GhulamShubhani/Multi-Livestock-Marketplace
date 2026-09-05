@@ -19,19 +19,25 @@ const API_LOCAL = process.env.NEXT_PUBLIC_API_LOCAL_URL ?? 'http://localhost:500
 const API_REMOTE =
   process.env.NEXT_PUBLIC_API_REMOTE_URL ??
   process.env.NEXT_PUBLIC_API_DEV_URL ??
-  'https://cat-shop-backend.vercel.app/api/v1';
+  'https://multi-livestock-marketplace.onrender.com/api/v1';
+
+/** Modes that point at the deployed API (`NEXT_PUBLIC_API_REMOTE_URL`). */
+function usesRemoteApi(mode: string): boolean {
+  return mode === 'remote' || mode === 'production' || mode === 'prod';
+}
 
 /**
  * Resolve API base URL.
- * - Production / explicit: NEXT_PUBLIC_API_URL wins
- * - Local: NEXT_PUBLIC_API_MODE=local|remote (default local)
+ * - Explicit NEXT_PUBLIC_API_URL wins
+ * - NEXT_PUBLIC_API_MODE=local → local URL (default)
+ * - NEXT_PUBLIC_API_MODE=remote|production|prod → remote URL
  */
 function resolveApiUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (explicit) return explicit.replace(/\/$/, '');
 
   const mode = (process.env.NEXT_PUBLIC_API_MODE ?? 'local').toLowerCase();
-  const url = mode === 'remote' ? API_REMOTE : API_LOCAL;
+  const url = usesRemoteApi(mode) ? API_REMOTE : API_LOCAL;
   return url.replace(/\/$/, '');
 }
 

@@ -4,19 +4,25 @@ const API_LOCAL = import.meta.env.VITE_API_LOCAL_URL ?? 'http://localhost:5000/a
 const API_REMOTE =
   import.meta.env.VITE_API_REMOTE_URL ??
   import.meta.env.VITE_API_DEV_URL ??
-  'https://cat-shop-backend.vercel.app/api/v1';
+  'https://multi-livestock-marketplace.onrender.com/api/v1';
+
+/** Modes that point at the deployed API (`VITE_API_REMOTE_URL`). */
+function usesRemoteApi(mode: string): boolean {
+  return mode === 'remote' || mode === 'production' || mode === 'prod';
+}
 
 /**
  * Resolve API base URL.
  * - Explicit VITE_API_URL wins (use this on Vercel admin deploy)
- * - Local: VITE_API_MODE=local|remote (default local)
+ * - VITE_API_MODE=local → local URL (default)
+ * - VITE_API_MODE=remote|production|prod → remote URL
  */
 function resolveApiUrl(): string {
   const explicit = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
   if (explicit) return explicit.replace(/\/$/, '');
 
   const mode = String(import.meta.env.VITE_API_MODE ?? 'local').toLowerCase();
-  const url = mode === 'remote' ? API_REMOTE : API_LOCAL;
+  const url = usesRemoteApi(mode) ? API_REMOTE : API_LOCAL;
   return url.replace(/\/$/, '');
 }
 
