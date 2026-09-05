@@ -31,13 +31,8 @@ describe('payment status model', () => {
 
   it('does not reference stripe providers', async () => {
     const { readFile } = await import('node:fs/promises');
-    const { fileURLToPath } = await import('node:url');
     const path = await import('node:path');
-    const modelPath = path.join(
-      path.dirname(fileURLToPath(import.meta.url)),
-      'model',
-      'payment.model.ts',
-    );
+    const modelPath = path.join(__dirname, 'model', 'payment.model.ts');
     const source = await readFile(modelPath, 'utf8');
     assert.equal(source.toLowerCase().includes('stripe'), false);
     assert.ok(source.includes('upi'));
