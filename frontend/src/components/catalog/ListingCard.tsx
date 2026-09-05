@@ -3,9 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { Box, Button, CardActionArea, Chip, Stack, Typography } from '@mui/material';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import type { Listing } from '@/types/api';
 import { formatMoney } from '@/lib/utils';
 import {
@@ -16,10 +14,6 @@ import {
   namedRefName,
   primaryImage,
 } from '@/lib/listing';
-import { useCartStore } from '@/stores/cart';
-import { useWishlistStore } from '@/stores/wishlist';
-import { useAuthStore } from '@/stores/auth';
-import { wishlistApi } from '@/lib/api/commerce';
 import { OptimizedImage } from '@/components/media/OptimizedImage';
 import { inferImageSourceType } from '@/lib/image-source';
 
@@ -28,62 +22,8 @@ type Props = {
 };
 
 export function ListingCard({ listing }: Props) {
-  const addCart = useCartStore((s) => s.addItem);
-  const wishHas = useWishlistStore((s) => s.has);
-  const addWish = useWishlistStore((s) => s.addItem);
-  const removeWish = useWishlistStore((s) => s.removeItem);
-  const user = useAuthStore((s) => s.user);
-  const liked = wishHas(listing._id);
   const image = primaryImage(listing.images);
   const href = listingHref(listing);
-  const categorySlug = categorySlugOf(listing);
-
-  const toggleWish = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const item = {
-      listingId: listing._id,
-      title: listing.title,
-      slug: listing.slug,
-      categorySlug,
-      price: listing.price,
-      image,
-    };
-    if (liked) {
-      removeWish(listing._id);
-      if (user) {
-        try {
-          await wishlistApi.remove(listing._id);
-        } catch {
-          addWish(item);
-        }
-      }
-      return;
-    }
-    addWish(item);
-    if (user) {
-      try {
-        await wishlistApi.add(listing._id);
-      } catch {
-        removeWish(listing._id);
-      }
-    }
-  };
-
-  const addToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addCart({
-      listingId: listing._id,
-      title: listing.title,
-      slug: listing.slug,
-      categorySlug,
-      price: listing.price,
-      currency: listing.currency,
-      image,
-      quantity: 1,
-    });
-  };
 
   const meta = [
     namedRefName(listing.breed),
@@ -132,15 +72,27 @@ export function ListingCard({ listing }: Props) {
               sourceLabel={listing.images?.find((i) => i.url === image)?.sourceLabel}
             />
           ) : null}
+          {namedRefName(listing.category) ? (
+            <Chip
+              label={namedRefName(listing.category)}
+              size="small"
+              sx={{
+                position: 'absolute',
+                top: 12,
+                left: 12,
+                bgcolor: 'rgba(12,23,20,0.78)',
+                color: '#F7F4EF',
+              }}
+            />
+          ) : null}
           {listing.featured ? (
             <Chip
               label="Featured"
               size="small"
               color="secondary"
-              sx={{ position: 'absolute', top: 12, left: 12 }}
+              sx={{ position: 'absolute', top: 12, right: 12 }}
             />
-          ) : null}
-          {listing.verificationStatus === 'verified' ? (
+          ) : listing.verificationStatus === 'verified' ? (
             <Chip
               label="Verified"
               size="small"
@@ -185,30 +137,17 @@ export function ListingCard({ listing }: Props) {
         </Typography>
       </Stack>
 
-      <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={<ShoppingBagOutlinedIcon />}
-          onClick={addToCart}
-          sx={{ flexGrow: 1 }}
-        >
-          Add
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          onClick={toggleWish}
-          aria-label={liked ? 'Remove from wishlist' : 'Add to wishlist'}
-          sx={{ minWidth: 44 }}
-        >
-          {liked ? (
-            <FavoriteIcon color="secondary" fontSize="small" />
-          ) : (
-            <FavoriteBorderIcon fontSize="small" />
-          )}
-        </Button>
-      </Stack>
+      <Button
+        component={Link}
+        href={href}
+        size="small"
+        variant="contained"
+        color="secondary"
+        endIcon={<ArrowForwardIcon fontSize="small" />}
+        sx={{ mt: 1.5, alignSelf: 'stretch' }}
+      >
+        View details
+      </Button>
     </Box>
   );
 }

@@ -2,15 +2,16 @@ import type { Metadata } from 'next';
 import { ListingsCatalog } from '@/components/catalog/ListingsCatalog';
 
 export const metadata: Metadata = {
-  title: 'Browse animals',
-  description: 'Explore cats, cattle, goats, sheep, and poultry from trusted sellers.',
+  title: 'Animals',
+  description:
+    'Browse cats, cattle, goats, buffaloes, poultry, and more from trusted sellers across India.',
 };
 
 export default function AnimalsPage() {
   return (
     <ListingsCatalog
-      title="Browse animals"
-      subtitle="Filter by category, location, and gender to find the right animal."
+      title="Animals"
+      subtitle="Explore every category in one place — filter by location, breed, gender, and price."
     />
   );
 }
